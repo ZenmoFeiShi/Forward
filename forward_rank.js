@@ -323,6 +323,12 @@ async function getWeeklyThaiDrama() { return getRankByCateId(149, "本周泰剧�
 async function getWeeklyVariety() { return getRankByCateId(171, "本周综艺排行榜"); }
 async function getWeeklyDocumentary() { return getRankByCateId(172, "本周纪录片排行榜"); }
 
+function cleanText(text) {
+  return String(text || "")
+    .replace(/[\u200B-\u200D\uFEFF\u2060\u00AD]/g, "")
+    .trim();
+}
+
 function toInt(v, defVal = 0) {
   const n = parseInt(String(v == null ? "" : v).trim(), 10);
   return Number.isFinite(n) ? n : defVal;
@@ -331,7 +337,7 @@ function toInt(v, defVal = 0) {
 const CN_NUMS = ["零","一","二","三","四","五","六","七","八","九","十","十一","十二","十三","十四","十五","十六","十七","十八","十九","二十"];
 
 function extractSeasonNumber(text) {
-  const t = String(text || "");
+  const t = cleanText(text);
   let m = t.match(/第\s*([一二三四五六七八九十]+|\d+)\s*[季部]/);
   if (m) {
     const v = m[1];
@@ -352,12 +358,12 @@ function extractSeasonNumber(text) {
 }
 
 function extractYear(text) {
-  const m = String(text || "").match(/\b(19|20)\d{2}\b/);
+  const m = cleanText(text).match(/\b(19|20)\d{2}\b/);
   return m ? m[0] : "";
 }
 
 function stripSeasonHints(text) {
-  return String(text || "")
+  return cleanText(text)
     .replace(/第\s*[一二三四五六七八九十0-9]+\s*[季部]/g, "")
     .replace(/Season\s*\d+/ig, "")
     .replace(/\bS\d{1,2}(E\d{1,2})?\b/ig, "")
@@ -365,34 +371,47 @@ function stripSeasonHints(text) {
 }
 
 function normalizeName(text) {
-  return String(text || "")
+  return cleanText(text)
     .toLowerCase()
     .replace(/[\s·•・:：\-–—_!！?？.,，。、"'`~()（）\[\]【】]/g, "");
 }
 
-function scoreCandidate(item, want) {
+function typeScoreByParams(item, params) {
+  const tid = String(item.t_id || item.type_id || "");
+  if (!tid) return 0;
+  if (params.type === "movie") return tid === "1" ? 35 : -25;
+  if (params.type === "tv") {
+    if (tid === "1") return -45;
+    if (tid === "2") return 30;
+    return 8;
+  }
+  return 0;
+}
+
+function scoreCandidate(item, want, params) {
   const name = String(item.vod_name || item.title || "");
   const normName = normalizeName(name);
   const baseName = normalizeName(stripSeasonHints(name));
   const year = String(item.vod_year || "");
   const seasonNum = extractSeasonNumber(name);
   let score = 0;
-  if (want.fullNorm && normName === want.fullNorm) score += 100;
-  if (want.baseNorm && baseName === want.baseNorm) score += 80;
-  if (want.baseNorm && normName.includes(want.baseNorm)) score += 30;
+  if (want.fullNorm && normName === want.fullNorm) score += 320;
+  if (want.baseNorm && baseName === want.baseNorm) score += 220;
+  if (want.baseNorm && (normName.includes(want.baseNorm) || want.baseNorm.includes(normName))) score += 45;
+  score += typeScoreByParams(item, params);
   if (want.season > 0 && seasonNum === want.season) score += 40;
   if (want.season > 0 && seasonNum != null && seasonNum !== want.season) score -= 35;
-  if (want.year && year === want.year) score += 10;
-  if (want.year && year && year !== want.year) score -= 4;
+  if (want.year && year === want.year) score += 70;
+  if (want.year && year && year !== want.year) score -= 20;
   if (/解说|速看|合集|全系列|电影解说/.test(name)) score -= 60;
   return score;
 }
 
 function pickBestVod(list, params) {
-  const rawSeries = String(params.seriesName || params.title || "").trim();
-  const rawEpisodeName = String(params.episodeName || "").trim();
+  const rawSeries = cleanText(params.seriesName || params.title || "");
+  const rawEpisodeName = cleanText(params.episodeName || "");
   const fullText = [rawSeries, rawEpisodeName].filter(Boolean).join(" ");
-  const inferredSeason = toInt(params.season, 0) || extractSeasonNumber(fullText) || extractSeasonNumber(rawSeries) || extractSeasonNumber(rawEpisodeName) || 1;
+  const inferredSeason = toInt(params.season, 0) || extractSeasonNumber(fullText) || extractSeasonNumber(rawSeries) || extractSeasonNumber(rawEpisodeName) || 0;
   const inferredYear = String(params.premiereDate || "").slice(0, 4) || extractYear(fullText) || "";
   const baseTitle = stripSeasonHints(rawSeries || rawEpisodeName || fullText);
   const want = {
@@ -402,7 +421,7 @@ function pickBestVod(list, params) {
     baseNorm: normalizeName(baseTitle || rawSeries || fullText)
   };
   const ranked = safeArray(list)
-    .map(item => ({ item, score: scoreCandidate(item, want) }))
+    .map(item => ({ item, score: scoreCandidate(item, want, params) }))
     .sort((a, b) => b.score - a.score);
   if (!ranked.length) return null;
   return ranked[0].item;
