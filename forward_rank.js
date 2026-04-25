@@ -3,12 +3,12 @@ const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.mi
 const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
 
 var WidgetMetadata = {
-  id: "https://t.me/Nzmgs?rev=20260423b",
+  id: "https://t.me/Nzmgs?rev=20260425b",
   title: "聚合实时榜单",
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.2.4",
+  version: "1.2.5",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -251,6 +251,19 @@ async function mapRankItems(data) {
   for (const item of safeArray(data.list)) {
     const entity = await searchForwardEntity(item);
     const seasonNum = extractCardSeason(item.title || "");
+    const tagsArr = safeArray(item.tags);
+    const isAnime = tagsArr.some(t => /动漫|动画|漫画/.test(String(t)));
+    const isVariety = tagsArr.some(t => /综艺|脱口秀|真人秀/.test(String(t)));
+    const isDoc = tagsArr.some(t => /纪录/.test(String(t)));
+    const isMovieTag = tagsArr.includes("电影");
+    let cat = "tv";
+    if (isMovieTag) cat = "movie";
+    else if (isAnime) cat = "anime";
+    else if (isVariety) cat = "variety";
+    else if (isDoc) cat = "documentary";
+    // genreTitle 中追加 [GXF cat=…|area=…] 标记，loadResource 端可解析回锁
+    const gxfMarker = `[GXF cat=${cat}|area=${item.vod_area || item.area || ""}|t=${item.t_id || ""}|vid=${item.vod_id || ""}]`;
+    const genreOut = (tagsArr.length ? tagsArr.join(" / ") + " " : "") + gxfMarker;
     if (entity && entity.id) {
       out.push({
         id: entity.id,
@@ -263,13 +276,13 @@ async function mapRankItems(data) {
           item.sub_title || entity.info.description || "",
           item.vod_director ? `导演：${item.vod_director}` : "",
           item.vod_actor ? `演员：${item.vod_actor}` : "",
-          safeArray(item.tags).length ? `标签：${item.tags.join(" / ")}` : "",
+          tagsArr.length ? `标签：${tagsArr.join(" / ")}` : "",
           item.new_continue ? `更新：${item.new_continue}` : (item.vod_remarks ? `更新：${item.vod_remarks}` : "")
         ].filter(Boolean).join("\n"),
         releaseDate: entity.info.releaseDate || item.vod_year || "",
         rating: item.score || entity.info.rating || "",
         mediaType: entity.mediaType,
-        genreTitle: safeArray(item.tags).join(" / "),
+        genreTitle: genreOut,
         tmdbInfo: entity.info,
         tmdbId: entity.id,
         seasonInfo: seasonNum ? `第 ${seasonNum} 季` : ""
@@ -378,13 +391,58 @@ function normalizeName(text) {
 
 function typeScoreByParams(item, params) {
   const tid = String(item.t_id || item.type_id || "");
+  const cat = String(params.__gxfCategory || params.gxfCategory || "").toLowerCase();
   if (!tid) return 0;
-  if (params.type === "movie") return tid === "1" ? 35 : -25;
-  if (params.type === "tv") {
-    if (tid === "1") return -45;
-    if (tid === "2") return 30;
-    return 8;
+  // 强类别约束（动漫/综艺/纪录片/电影/电视剧），错类别一票否决式扣分
+  if (cat === "anime") {
+    if (tid === "4") return 80;
+    if (tid === "1") return -200;
+    if (tid === "2") return -200;
+    return -120;
   }
+  if (cat === "variety") {
+    if (tid === "3") return 80;
+    return -200;
+  }
+  if (cat === "documentary") {
+    if (tid === "5") return 80;
+    return -200;
+  }
+  if (cat === "movie" || params.type === "movie") {
+    if (tid === "1") return 60;
+    return -200;
+  }
+  // 默认 tv
+  if (tid === "1") return -120;
+  if (tid === "2") return 40;
+  if (tid === "4") return -150;
+  if (tid === "3" || tid === "5") return -200;
+  return 0;
+}
+
+function areaScore(item, params) {
+  const want = String(params.__gxfArea || "").trim();
+  if (!want) return 0;
+  const got = String(item.vod_area || "").trim();
+  if (!got) return 0;
+  if (got === want) return 50;
+  // 大陆/中国互通
+  if (/大陆|中国|内地/.test(want) && /大陆|中国|内地/.test(got)) return 50;
+  return -40;
+}
+
+function actorScore(item, params) {
+  const wantActors = String(params.__gxfActor || "").toLowerCase();
+  if (!wantActors) return 0;
+  const got = String(item.vod_actor || "").toLowerCase();
+  if (!got) return 0;
+  const wantList = wantActors.split(/[,，、\/\s]+/).filter(Boolean);
+  let hit = 0;
+  for (const a of wantList) {
+    if (a.length >= 2 && got.indexOf(a) >= 0) hit++;
+  }
+  if (hit >= 2) return 25;
+  if (hit === 1) return 12;
   return 0;
 }
 
@@ -399,11 +457,24 @@ function scoreCandidate(item, want, params) {
   if (want.baseNorm && baseName === want.baseNorm) score += 220;
   if (want.baseNorm && (normName.includes(want.baseNorm) || want.baseNorm.includes(normName))) score += 45;
   score += typeScoreByParams(item, params);
+  score += areaScore(item, params);
+  score += actorScore(item, params);
   if (want.season > 0 && seasonNum === want.season) score += 40;
   if (want.season > 0 && seasonNum != null && seasonNum !== want.season) score -= 35;
   if (want.year && year === want.year) score += 70;
   if (want.year && year && year !== want.year) score -= 20;
-  if (/解说|速看|合集|全系列|电影解说/.test(name)) score -= 60;
+  if (/解说|速看|合集|全系列|电影解说|预告|花絮|彩蛋/.test(name)) score -= 80;
+  // 集数容量兜底：候选总集数若装不下 want.episode，强扣分（防止挑到只有 10 集的同名剧集）
+  const wantEp = toInt(params.episode, 0);
+  if (wantEp > 0) {
+    const cap = toInt(item.vod_continu, 0) || toInt(item.d_total, 0) || toInt(item.vod_total, 0);
+    if (cap > 0 && cap < wantEp) score -= 250;
+  }
+  // 名称过度扩展惩罚（"完美世界" vs "完美世界：少年至尊篇" / "丈夫的完美世界"）
+  if (want.fullNorm && want.baseNorm && normName !== want.fullNorm && normName !== want.baseNorm) {
+    if (normName.length > Math.max(want.fullNorm.length, want.baseNorm.length) + 2) score -= 30;
+    if (!normName.startsWith(want.baseNorm) && want.baseNorm.length >= 4) score -= 20;
+  }
   return score;
 }
 
@@ -420,10 +491,23 @@ function pickBestVod(list, params) {
     fullNorm: normalizeName(rawSeries || fullText),
     baseNorm: normalizeName(baseTitle || rawSeries || fullText)
   };
+  // 0) 若 params 中带 GXF 锁定 vod_id，且候选里存在，直接命中
+  const lockVid = String(params.__gxfVid || "").trim();
+  if (lockVid) {
+    const hit = safeArray(list).find(it => String(it.vod_id || "") === lockVid);
+    if (hit) return hit;
+  }
   const ranked = safeArray(list)
     .map(item => ({ item, score: scoreCandidate(item, want, params) }))
     .sort((a, b) => b.score - a.score);
   if (!ranked.length) return null;
+  // 调试日志（仅在 console 可用时）
+  try {
+    if (typeof console !== "undefined" && console.log) {
+      console.log("[forward_rank] candidates for", rawSeries, "want=", JSON.stringify(want), "cat=", params.__gxfCategory || "", "area=", params.__gxfArea || "");
+      ranked.slice(0, 6).forEach(r => console.log("  ", r.score, r.item.vod_id, r.item.t_id, r.item.vod_area, r.item.vod_year, r.item.vod_name));
+    }
+  } catch (e) {}
   return ranked[0].item;
 }
 
@@ -486,13 +570,53 @@ async function resolvePlayUrls(ep) {
   return out;
 }
 
+function parseGxfMarker(text) {
+  // 解析 [GXF cat=anime|area=大陆|t=4|vid=39]
+  const m = String(text || "").match(/\[GXF\s+([^\]]+)\]/);
+  if (!m) return {};
+  const out = {};
+  m[1].split("|").forEach(seg => {
+    const idx = seg.indexOf("=");
+    if (idx > 0) out[seg.slice(0, idx).trim()] = seg.slice(idx + 1).trim();
+  });
+  return out;
+}
+
+function inferCategoryFromParams(params) {
+  // 优先使用 GXF marker
+  const m = parseGxfMarker(params.genreTitle || "");
+  if (m.cat) return { cat: m.cat, area: m.area || "", vid: m.vid || "", t: m.t || "" };
+  const text = [
+    params.genreTitle || "",
+    params.tagsText || "",
+    params.title || "",
+    params.seriesName || "",
+    params.originalTitle || "",
+    params.tmdbInfo && params.tmdbInfo.originalTitle || ""
+  ].join(" ");
+  let cat = "";
+  if (params.type === "movie") cat = "movie";
+  else if (/动漫|动画|漫画|Animation|Anime/i.test(text)) cat = "anime";
+  else if (/综艺|脱口秀|真人秀|Reality|Talk[- ]?Show/i.test(text)) cat = "variety";
+  else if (/纪录|Documentary/i.test(text)) cat = "documentary";
+  else cat = "tv";
+  return { cat, area: "", vid: "", t: "" };
+}
+
 async function loadResource(params) {
   const rawSeries = String(params.seriesName || params.title || "").trim();
   const rawEpisodeName = String(params.episodeName || "").trim();
   const searchKeyword = stripSeasonHints(rawSeries || rawEpisodeName || "") || rawSeries || rawEpisodeName;
   if (!searchKeyword) return [];
+  const meta = inferCategoryFromParams(params);
+  const enrichedParams = Object.assign({}, params, {
+    __gxfCategory: meta.cat,
+    __gxfArea: meta.area,
+    __gxfVid: meta.vid,
+    __gxfActor: ""
+  });
   const searchData = await privatePost("/App/Index/findMoreVod", { keywords: searchKeyword, order_val: "" });
-  const best = pickBestVod(searchData && searchData.list, params);
+  const best = pickBestVod(searchData && searchData.list, enrichedParams);
   if (!best || !best.vod_id) return [];
   const vurlData = await privatePost("/App/Resource/Vurl/show", { vod_d_id: best.vod_id, vurl_cloud_id: "2" });
   const pickedEp = pickEpisode(vurlData && vurlData.list, params);
