@@ -273,7 +273,7 @@ async function mapRankItems(data) {
         posterPath: item.pic || entity.info.posterPath || item.pre_video_pic || "",
         backdropPath: item.pre_video_pic || entity.info.backdropPath || item.pic || "",
         description: [
-          item.sub_title || entity.info.description || "",
+          entity.info.description || item.sub_title || "",
           item.vod_director ? `导演：${item.vod_director}` : "",
           item.vod_actor ? `演员：${item.vod_actor}` : "",
           tagsArr.length ? `标签：${tagsArr.join(" / ")}` : "",
