@@ -3,12 +3,12 @@ const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.mi
 const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
 
 var WidgetMetadata = {
-  id: "https://t.me/Nzmgs?rev=20260425b",
+  id: "https://t.me/Nzmgs?rev=20260427a",
   title: "聚合实时榜单",
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.2.6",
+  version: "1.2.7",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -526,17 +526,24 @@ function parseParamQuery(text) {
 function pickEpisode(list, params) {
   const eps = safeArray(list);
   if (!eps.length) return null;
+  // 电影：单集，取第一个
   if (params.type === "movie") return eps[0];
-  const wantEp = toInt(params.episode, 0) || 1;
+  const wantEp = toInt(params.episode, 0);
+  // 没传集号时，按第 1 集；明确传了集号则严格匹配
+  if (wantEp <= 0) {
+    return eps[0] || null;
+  }
+  // 1) title 中的数字精确匹配（"01" / "第16集" / "16" 都覆盖）
   for (const ep of eps) {
     const titleNum = String(ep.title || "").replace(/\D/g, "");
     if (titleNum && parseInt(titleNum, 10) === wantEp) return ep;
   }
+  // 2) sort 字段精确匹配
   for (const ep of eps) {
     if (toInt(ep.sort, 0) === wantEp) return ep;
   }
-  if (wantEp >= 1 && wantEp <= eps.length) return eps[wantEp - 1];
-  return eps[0];
+  // 严格模式：找不到目标集就返回 null，绝不兜底到第 1 集
+  return null;
 }
 
 async function resolvePlayUrls(ep) {
@@ -618,6 +625,15 @@ async function loadResource(params) {
   const searchData = await privatePost("/App/Index/findMoreVod", { keywords: searchKeyword, order_val: "" });
   const best = pickBestVod(searchData && searchData.list, enrichedParams);
   if (!best || !best.vod_id) return [];
+  // 前置检查：用户请求集数 > 该 vod 已更新集数 → 直接返回空（避免兜底到第 1 集）
+  const wantEp = toInt(params.episode, 0);
+  if (params.type !== "movie" && wantEp > 0) {
+    const updated = toInt(best.vod_continu, 0);
+    if (updated > 0 && wantEp > updated) {
+      try { console.log("[forward_rank] episode " + wantEp + " not yet released for vod_id=" + best.vod_id + " (updated to " + updated + ")"); } catch (e) {}
+      return [];
+    }
+  }
   const vurlData = await privatePost("/App/Resource/Vurl/show", { vod_d_id: best.vod_id, vurl_cloud_id: "2" });
   const pickedEp = pickEpisode(vurlData && vurlData.list, params);
   if (!pickedEp) return [];
