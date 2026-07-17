@@ -1,15 +1,10 @@
-const USER_AGENT = "TilingSales/2 CFNetwork/3860.500.112 Darwin/25.4.0";
-const PLAY_USER_AGENT = "AppleCoreMedia/1.0.0.21F90 (iPhone; U; CPU OS 17_5 like Mac OS X; zh_cn)";
-const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js";
-const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
-
-var WidgetMetadata = {
-  id: "https://t.me/Nzmgs?rev=20260605b",
+WidgetMetadata = {
+  id: "https://t.me/Nzmgs?rev=20260713c",
   title: "聚合实时榜单",
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.2.9",
+  version: "1.3.0",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -27,26 +22,31 @@ var WidgetMetadata = {
     { title: "本周泰剧排行榜", description: "实时获取本周泰剧排行榜真实内容", requiresWebView: false, functionName: "getWeeklyThaiDrama", cacheDuration: 120, params: [] },
     { title: "本周综艺排行榜", description: "实时获取本周综艺排行榜真实内容", requiresWebView: false, functionName: "getWeeklyVariety", cacheDuration: 120, params: [] },
     { title: "本周纪录片排行榜", description: "实时获取本周纪录片排行榜真实内容", requiresWebView: false, functionName: "getWeeklyDocumentary", cacheDuration: 120, params: [] },
-    { id: "loadResource", title: "瓜子影视播放源", description: "瓜子影视搜索与播放源返回", functionName: "loadResource", type: "stream", params: [] }
+    { id: "loadResource", title: "瓜子影视播放源", description: "仅返回瓜子影视 1080P 播放源", functionName: "loadResource", type: "stream", cacheDuration: 0, params: [] }
   ]
 };
 
+const USER_AGENT = "MortiseKpxt/2 CFNetwork/3890.100.1 Darwin/27.0.0";
+const PLAY_USER_AGENT = "AppleCoreMedia/1.0.0.21F90 (iPhone; U; CPU OS 17_5 like Mac OS X; zh_cn)";
+const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js";
+const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
+
 const APP_CONFIG = {
-  baseURL: "https://api.1000gxf.com",
+  baseURL: "https://api.8b42w67.com",
   versionCode: "2026033001",
-  apiVersion: "3.0.4.1",
+  apiVersion: "3.0.5.0",
   productnumber: "1",
   platform: "2",
   packageName: "com.jfm202203",
-  code: "RNGZ0001",
+  code: "GZ0520",
   requestAes: { key: "aaaabbbbccccdddd", iv: "1111222233334444" },
   requestPublicKey: "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCWJafJAdhTPWMrNpbmlk672o06smRwxe1LoHjy2XbLRaKIXfQJWgJTBhLH4qUIPMmpnIKQYqjMLTrJhwG5Bwsd3/15YHdL7eWad7lpomF5doOQmmexK2+gSBHmCOhXeumhrOD63vx8ERepxR6UCxTi5b5fZmqMdbLk45IW39mn6wIDAQAB-----END PUBLIC KEY-----",
   responsePrivateKey: "-----BEGIN RSA PRIVATE KEY-----MIICXQIBAAKBgQCM+iJdCeYFydG3DiFG0Ajr6IS0NENW1Bb2MSwrUdvLiI7nXHG+zZZuyqewVUPUPQRdEvhSMCyTKjjX9QajRJ1Uv+xVnsOmxEQQIhAIUa1dsXsN30nLGA+VuNHF7J1SE+Vh/46duR/0Q+Iq+3esSYlb3/PdN4wgK5ab+jKeR0JA2wIDAQABAoGAbst/CkPnRZFRgl5WhMKm4FDDSqTwb2MMELygjAMvjIxsUyRyOJR2r+gRViIMxtaVgViRVHaL8bTzK7ZkWxhn1LEM7RpWB1zjKFvXxE+dzxPrYY/Qw7dobzAAMyQhZ2+7PTO/plUYOxNgZPUzsvcoI44M3HRy1yFxGbF9z9LiMDECQQDTs5eXJnjEN1JmqbBotFw0III0/se/r0oDv4AvJdbxl64t64dZI2tS3BO7NL3OAOzf+WL14Pf2uADFDZz9kzHPAkEAqnn7TBlZXc6L70TnCaggMAN9C+2Iuik2Q2dePfTBI9IyJiC54k4G66iT+kQ5F6T4MGWf6jb7xUuUTk6AHck/NQJBALk+5oAh7v0rt5QUGkSUxjXq2GUNKLbn6Ok8sisPfnVrF8Qg3A+4+ZnI8A8ZSJkxoBUgwWKMWA5w1mOX1O7i1WsCQHV0qgHajUomnx9x18U9gz/Rh3yKYmPxNSPnunTxh4kIr+i5L5mOrRH9CkeqbbOuxBmES1PyIjHjSwFQ8NCU8ekCQQCwb4PirUbcqeHbjN0Nv6vm5pqsgJ29GhA9qiy2l+1Wb637STe9L2mEt7ImUd9FGy7k3Nnsn5eou/t2SV3OkGaU-----END RSA PRIVATE KEY-----",
   iosRequestSalt: "&ffddffujhjhgvdvdvdz4Y!s!2br",
-  token: "4bd478357df7f37d88151b7dc8f9167d.260de3393c2854bd24e15182ea6c0ded6ee75f5501811d3e5427389a72fa1cda5884b98b245cdc4ae08931d017252923a8de029c5a098a0e7732ac496d23a400952bb419724e1113b902fdca56b6b0226a4f7c47ddb4e7446870a6b7ac1410129005f032d07008addd565ba05ab8e1fe4aa231559ba3ec0a9100cca0e8ea35a8.36a6eb8f80f85314e79b1c1d10aecf78286c9d0658b006b6397d81c0dbb710cd",
+  token: "a2feae876a6dde906c50fcb21bd6fd26.292a22377b57f7f0da4295d2d7418982f1526588638bfda463933d481caa7cc3e3f12f688a61a944363d36bb6a98a494ef286d56c60778960dfcd190f006187ccccb7c6f2f7baa62885fffcdfebf027513a0d75692ffe6ef0b762267aa01f2c6a98c40d4a3e624d2dfff665312498e70c9b98a79c534d8ba0ccd5d5c08208110fefb31c47b2a6b0713406ff9e920891e.cf889b1687a0fb82c1e2a126059a7735b09b1737af63d1790ea0fbb46af647da",
   tokenId: "",
-  deviceId: "9842D2AB-E588-4A47-B365-D5473C7DD10C",
-  ip: "23.145.36.25",
+  deviceId: "F562B0EF-7748-46E7-9763-57940FEC3980",
+  ip: "52.195.184.154",
   lang: "zh_cn"
 };
 
@@ -166,6 +166,15 @@ async function privatePost(path, params = {}) {
 
 function safeArray(v) { return Array.isArray(v) ? v : []; }
 
+function sleep(ms) {
+  const t = Number(ms) || 0;
+  if (t <= 0) return Promise.resolve();
+  if (typeof setTimeout === "function") return new Promise(r => setTimeout(r, t));
+  const end = Date.now() + t;
+  while (Date.now() < end) {}
+  return Promise.resolve();
+}
+
 function forwardInfoGet(url) {
   return Widget.http.get(url, { headers: { "User-Agent": USER_AGENT } }).then(resp => typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data);
 }
@@ -262,6 +271,7 @@ async function mapRankItems(data) {
     else if (isAnime) cat = "anime";
     else if (isVariety) cat = "variety";
     else if (isDoc) cat = "documentary";
+    // genreTitle 中追加 [GXF cat=…|area=…] 标记，loadResource 端可解析回锁
     const gxfMarker = `[GXF cat=${cat}|area=${item.vod_area || item.area || ""}|t=${item.t_id || ""}|vid=${item.vod_id || ""}]`;
     const genreOut = (tagsArr.length ? tagsArr.join(" / ") + " " : "") + gxfMarker;
     if (entity && entity.id) {
@@ -347,25 +357,31 @@ function toInt(v, defVal = 0) {
   return Number.isFinite(n) ? n : defVal;
 }
 
-const CN_NUMS = ["零","一","二","三","四","五","六","七","八","九","十","十一","十二","十三","十四","十五","十六","十七","十八","十九","二十"];
+function chineseNumberToInt(value) {
+  const t = cleanText(value);
+  if (!t) return null;
+  if (/^\d+$/.test(t)) return parseInt(t, 10);
+  const digitMap = { "零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+  if (Object.prototype.hasOwnProperty.call(digitMap, t)) return digitMap[t];
+  if (t === "十") return 10;
+  const m = t.match(/^([一二两三四五六七八九])?十([一二两三四五六七八九])?$/);
+  if (!m) return null;
+  return (m[1] ? digitMap[m[1]] : 1) * 10 + (m[2] ? digitMap[m[2]] : 0);
+}
 
 function extractSeasonNumber(text) {
   const t = cleanText(text);
-  let m = t.match(/第\s*([一二三四五六七八九十]+|\d+)\s*[季部]/);
-  if (m) {
-    const v = m[1];
-    if (/^\d+$/.test(v)) return parseInt(v, 10);
-    const idx = CN_NUMS.indexOf(v);
-    if (idx >= 0) return idx;
-  }
-  m = t.match(/Season\s*(\d+)/i);
-  if (m) return parseInt(m[1], 10);
-  m = t.match(/\bS(\d{1,2})\b/i);
-  if (m) return parseInt(m[1], 10);
-  m = t.match(/([一二三四五六七八九十])季$/);
-  if (m) {
-    const idx = CN_NUMS.indexOf(m[1]);
-    if (idx >= 0) return idx;
+  const patterns = [
+    /第\s*([零〇一二两三四五六七八九十百\d]+)\s*[季部]/i,
+    /(?:season|series)\s*[-_.:]?\s*(\d{1,3})/i,
+    /\bS(?:eason)?\s*[-_.:]?\s*(\d{1,3})(?:\s*E\d+)?\b/i,
+    /([零〇一二两三四五六七八九十]+)\s*[季部](?:\s|$|[（(【[])/
+  ];
+  for (const pattern of patterns) {
+    const m = t.match(pattern);
+    if (!m) continue;
+    const n = chineseNumberToInt(m[1]);
+    if (n != null && n > 0) return n;
   }
   return null;
 }
@@ -377,9 +393,10 @@ function extractYear(text) {
 
 function stripSeasonHints(text) {
   return cleanText(text)
-    .replace(/第\s*[一二三四五六七八九十0-9]+\s*[季部]/g, "")
-    .replace(/Season\s*\d+/ig, "")
-    .replace(/\bS\d{1,2}(E\d{1,2})?\b/ig, "")
+    .replace(/第\s*[零〇一二两三四五六七八九十百0-9]+\s*[季部]/ig, "")
+    .replace(/(?:season|series)\s*[-_.:]?\s*\d{1,3}/ig, "")
+    .replace(/\bS(?:eason)?\s*[-_.:]?\s*\d{1,3}(?:\s*E\d{1,3})?\b/ig, "")
+    .replace(/[零〇一二两三四五六七八九十]+\s*[季部](?=\s|$|[（(【[])/ig, "")
     .trim();
 }
 
@@ -389,10 +406,54 @@ function normalizeName(text) {
     .replace(/[\s·•・:：\-–—_!！?？.,，。、"'`~()（）\[\]【】]/g, "");
 }
 
+function normalizeMediaType(value) {
+  const t = cleanText(value).toLowerCase();
+  if (t === "movie" || t === "film") return "movie";
+  if (t === "tv" || t === "series" || t === "show" || t === "episode") return "tv";
+  return "";
+}
+
+function firstPositiveInt(values) {
+  for (const value of values) {
+    const n = toInt(value, 0);
+    if (n > 0) return n;
+  }
+  return 0;
+}
+
+function buildPlaybackContext(params = {}) {
+  const mediaType = normalizeMediaType(params.type || params.mediaType);
+  const title = cleanText(params.title || "");
+  const seriesName = cleanText(params.seriesName || "");
+  const episodeName = cleanText(params.episodeName || "");
+  const season = firstPositiveInt([
+    params.season,
+    params.seasonNumber,
+    extractSeasonNumber(seriesName),
+    extractSeasonNumber(title),
+    extractSeasonNumber(episodeName),
+    extractSeasonNumber(params.seasonInfo || "")
+  ]);
+  const episode = firstPositiveInt([params.episode, params.episodeNumber, extractEpisodeNumber(episodeName)]);
+  let showTitle = seriesName;
+  if (!showTitle && mediaType === "movie") showTitle = title;
+  if (!showTitle && title && !/^\s*(?:第\s*)?\d+\s*[集话期]?\s*$/i.test(title)) showTitle = title;
+  if (!showTitle) showTitle = cleanText(params.originalTitle || (params.tmdbInfo && params.tmdbInfo.originalTitle) || "");
+  return Object.assign({}, params, {
+    type: mediaType || (season > 0 || episode > 0 ? "tv" : params.type),
+    seriesName: showTitle,
+    title,
+    episodeName,
+    season,
+    episode
+  });
+}
+
 function typeScoreByParams(item, params) {
   const tid = String(item.t_id || item.type_id || "");
   const cat = String(params.__gxfCategory || params.gxfCategory || "").toLowerCase();
   if (!tid) return 0;
+  // 强类别约束（动漫/综艺/纪录片/电影/电视剧），错类别一票否决式扣分
   if (cat === "anime") {
     if (tid === "4") return 80;
     if (tid === "1") return -200;
@@ -409,8 +470,11 @@ function typeScoreByParams(item, params) {
   }
   if (cat === "movie" || params.type === "movie") {
     if (tid === "1") return 60;
+    // 动画电影（猫和老鼠/迪士尼动画等）源站常归类 t_id=4（动漫），电影场景不应一票否决
+    if (tid === "4") return 30;
     return -200;
   }
+  // 默认 tv
   if (tid === "1") return -120;
   if (tid === "2") return 40;
   if (tid === "4") return -150;
@@ -424,6 +488,7 @@ function areaScore(item, params) {
   const got = String(item.vod_area || "").trim();
   if (!got) return 0;
   if (got === want) return 50;
+  // 大陆/中国互通
   if (/大陆|中国|内地/.test(want) && /大陆|中国|内地/.test(got)) return 50;
   return -40;
 }
@@ -449,35 +514,47 @@ function scoreCandidate(item, want, params) {
   const baseName = normalizeName(stripSeasonHints(name));
   const year = String(item.vod_year || "");
   const seasonNum = extractSeasonNumber(name);
+  const sameFranchise = !!want.baseNorm && baseName === want.baseNorm;
+  const typeScore = typeScoreByParams(item, params);
+  if (!sameFranchise || typeScore < 0) return -1e9;
+  if (params.type === "movie" && seasonNum != null) return -1e9;
+  if (params.type !== "movie" && want.season > 1 && seasonNum !== want.season) return -1e9;
+  if (params.type !== "movie" && want.season === 1 && seasonNum != null && seasonNum !== 1) return -1e9;
   let score = 0;
   if (want.fullNorm && normName === want.fullNorm) score += 320;
   if (want.baseNorm && baseName === want.baseNorm) score += 220;
   if (want.baseNorm && (normName.includes(want.baseNorm) || want.baseNorm.includes(normName))) score += 45;
-  score += typeScoreByParams(item, params);
+  score += typeScore;
   score += areaScore(item, params);
   score += actorScore(item, params);
-  const sameFranchise = !!want.baseNorm && (baseName === want.baseNorm || (!!want.fullNorm && normName === want.fullNorm));
-  if (want.season > 0 && sameFranchise) {
-    if (seasonNum === want.season) {
-      score += 300;                          
-    } else if (seasonNum != null) {
-      score -= 300;                          
-    } else if (want.season === 1) {
-      score += 100;                          
-    } else {
-      score -= 220;                          
+  // —— 季匹配：对“按季拆分条目”的数据源（瓜子影视）这是决定性信号 ——
+  // 仅当候选与目标同属一个系列（去季名后的基名一致）时才施加强季权重，
+  // 避免无关剧集仅凭季号蒙分；裸标题（无季号）在季拆分源里通常即第一季。
+  if (want.season > 0) {
+    if (sameFranchise && seasonNum === want.season) {
+      score += 300;
+    } else if (sameFranchise && seasonNum != null) {
+      score -= 420;
+    } else if (sameFranchise && want.season === 1) {
+      score += 100;
+    } else if (sameFranchise) {
+      score -= 320;
+    } else if (seasonNum != null && seasonNum !== want.season) {
+      score -= 120;
     }
-  } else if (want.season <= 0) {
-    if (seasonNum != null && seasonNum > 1) score -= 15;   
+  } else if (seasonNum != null && seasonNum > 1) {
+    score -= 15;
   }
   if (want.year && year === want.year) score += 70;
   if (want.year && year && year !== want.year) score -= 20;
   if (/解说|速看|合集|全系列|电影解说|预告|花絮|彩蛋/.test(name)) score -= 80;
+  // 集数容量兜底：候选总集数若装不下 want.episode，强扣分（防止挑到只有 10 集的同名剧集）
   const wantEp = toInt(params.episode, 0);
   if (wantEp > 0) {
     const cap = toInt(item.vod_continu, 0) || toInt(item.d_total, 0) || toInt(item.vod_total, 0);
     if (cap > 0 && cap < wantEp) score -= 250;
   }
+  // 名称过度扩展惩罚：用“去季名”后的基名比较，避免误伤合法分季条目（如“梦魇绝镇第四季”）
   if (want.baseNorm && baseName !== want.baseNorm && (!want.fullNorm || normName !== want.fullNorm)) {
     if (baseName.length > want.baseNorm.length + 2) score -= 30;
     if (!baseName.startsWith(want.baseNorm) && want.baseNorm.length >= 4) score -= 25;
@@ -490,7 +567,7 @@ function pickBestVod(list, params) {
   const rawEpisodeName = cleanText(params.episodeName || "");
   const fullText = [rawSeries, rawEpisodeName].filter(Boolean).join(" ");
   const inferredSeason = toInt(params.season, 0) || extractSeasonNumber(fullText) || extractSeasonNumber(rawSeries) || extractSeasonNumber(rawEpisodeName) || 0;
-  const inferredYear = String(params.premiereDate || "").slice(0, 4) || extractYear(fullText) || "";
+  const inferredYear = params.type === "movie" ? (String(params.premiereDate || params.releaseDate || "").slice(0, 4) || extractYear(fullText) || "") : "";
   const baseTitle = stripSeasonHints(rawSeries || rawEpisodeName || fullText);
   const want = {
     season: inferredSeason,
@@ -500,14 +577,28 @@ function pickBestVod(list, params) {
   };
   // 0) 若 params 中带 GXF 锁定 vod_id，且候选里存在，直接命中
   const lockVid = String(params.__gxfVid || "").trim();
-  if (lockVid) {
+  if (lockVid && !(params.type !== "movie" && want.season > 1)) {
     const hit = safeArray(list).find(it => String(it.vod_id || "") === lockVid);
-    if (hit) return hit;
+    if (hit) {
+      const hitName = String(hit.vod_name || hit.title || "");
+      const hitBase = normalizeName(stripSeasonHints(hitName));
+      const hitSeason = extractSeasonNumber(hitName);
+      if (hitBase === want.baseNorm && (!want.season || hitSeason === want.season || (want.season === 1 && hitSeason == null))) return hit;
+    }
   }
   const ranked = safeArray(list)
     .map(item => ({ item, score: scoreCandidate(item, want, params) }))
+    .filter(entry => entry.score > -1e8)
     .sort((a, b) => b.score - a.score);
   if (!ranked.length) return null;
+  const top = ranked[0];
+  const topName = String(top.item.vod_name || top.item.title || "");
+  const topBase = normalizeName(stripSeasonHints(topName));
+  const topSeason = extractSeasonNumber(topName);
+  const sameTitle = !!want.baseNorm && topBase === want.baseNorm;
+  if (!sameTitle || top.score < 120) return null;
+  if (want.season > 1 && topSeason !== want.season) return null;
+  if (want.season === 1 && topSeason != null && topSeason !== 1) return null;
   // 调试日志（仅在 console 可用时）
   try {
     if (typeof console !== "undefined" && console.log) {
@@ -515,7 +606,7 @@ function pickBestVod(list, params) {
       ranked.slice(0, 6).forEach(r => console.log("  ", r.score, r.item.vod_id, r.item.t_id, r.item.vod_area, r.item.vod_year, r.item.vod_name));
     }
   } catch (e) {}
-  return ranked[0].item;
+  return top.item;
 }
 
 function parseParamQuery(text) {
@@ -530,30 +621,38 @@ function parseParamQuery(text) {
   return out;
 }
 
+function extractEpisodeNumber(text) {
+  const t = cleanText(text);
+  if (!t) return 0;
+  const patterns = [
+    /(?:第\s*)?(\d{1,4})\s*[集话期]/i,
+    /\bE(?:P(?:ISODE)?)?\s*[-_.:]?\s*(\d{1,4})\b/i,
+    /\bS\d{1,3}\s*E(\d{1,4})\b/i,
+    /^0*(\d{1,4})$/
+  ];
+  for (const pattern of patterns) {
+    const m = t.match(pattern);
+    if (m) return toInt(m[1], 0);
+  }
+  return 0;
+}
+
 function pickEpisode(list, params) {
   const eps = safeArray(list);
   if (!eps.length) return null;
-  // 电影：单集，取第一个
   if (params.type === "movie") return eps[0];
-  const wantEp = toInt(params.episode, 0);
-  // 没传集号时，按第 1 集；明确传了集号则严格匹配
-  if (wantEp <= 0) {
-    return eps[0] || null;
-  }
-  // 1) title 中的数字精确匹配（"01" / "第16集" / "16" 都覆盖）
+  const wantEp = firstPositiveInt([params.episode, params.episodeNumber, extractEpisodeNumber(params.episodeName || "")]);
+  if (wantEp <= 0) return null;
   for (const ep of eps) {
-    const titleNum = String(ep.title || "").replace(/\D/g, "");
-    if (titleNum && parseInt(titleNum, 10) === wantEp) return ep;
+    if (extractEpisodeNumber(ep.title || "") === wantEp) return ep;
   }
-  // 2) sort 字段精确匹配
   for (const ep of eps) {
     if (toInt(ep.sort, 0) === wantEp) return ep;
   }
-  // 严格模式：找不到目标集就返回 null，绝不兜底到第 1 集
   return null;
 }
 
-const GXF_FAKE_HOST_RE = /xn--55qx2ai23bz99b|(^|\.)(\u529e\u516c\u9694\u65ad)\.cn/i;
+const GXF_FAKE_HOST_RE = /xn--55qx2ai23bz99b|xn--fiqs8s|wanglaoshi|(^|\.)(\u529e\u516c\u9694\u65ad)\.cn|(^|\.)(\u7f51\u8001\u5e08)/i;
 
 function isFakePlayUrl(url) {
   const u = String(url || "");
@@ -608,14 +707,14 @@ async function resolveOneRes(q, res) {
       const real = await probePlayUrl(data.url);
       if (real) return { url: real, vip: data.vip, m3u8: data.m3u8 };
     }
-    await new Promise(r => setTimeout(r, 700));
+    if (attempt < 4) await sleep(700);
   }
   return null;
 }
 
 async function resolvePlayUrls(ep) {
   const out = [];
-  for (const res of ["1080", "720", "480"]) {
+  for (const res of ["1080"]) {
     const slot = ((ep.play || {})[res]) || {};
     if (!slot.param || String(slot.show_type) !== "0") continue;
     const q = parseParamQuery(slot.param);
@@ -672,11 +771,12 @@ function inferCategoryFromParams(params) {
   return { cat, area: "", vid: "", t: "" };
 }
 
-async function loadResource(params) {
-  const rawSeries = String(params.seriesName || params.title || "").trim();
-  const rawEpisodeName = String(params.episodeName || "").trim();
-  const searchKeyword = stripSeasonHints(rawSeries || rawEpisodeName || "") || rawSeries || rawEpisodeName;
+async function loadResource(rawParams = {}) {
+  const params = buildPlaybackContext(rawParams);
+  const rawSeries = String(params.seriesName || "").trim();
+  const searchKeyword = stripSeasonHints(rawSeries) || rawSeries;
   if (!searchKeyword) return [];
+  if (params.type !== "movie" && (toInt(params.season, 0) <= 0 || toInt(params.episode, 0) <= 0)) return [];
   const meta = inferCategoryFromParams(params);
   const enrichedParams = Object.assign({}, params, {
     __gxfCategory: meta.cat,
@@ -685,8 +785,16 @@ async function loadResource(params) {
     __gxfActor: ""
   });
   const searchData = await privatePost("/App/Index/findMoreVod", { keywords: searchKeyword, order_val: "" });
-  const best = pickBestVod(searchData && searchData.list, enrichedParams);
+  const candidates = safeArray(searchData && searchData.list);
+  let best = pickBestVod(candidates, enrichedParams);
+  if (!best && params.type !== "movie" && toInt(params.season, 0) > 1) {
+    const seasonKeyword = rawSeries + " 第" + params.season + "季";
+    const seasonData = await privatePost("/App/Index/findMoreVod", { keywords: seasonKeyword, order_val: "" });
+    const merged = candidates.concat(safeArray(seasonData && seasonData.list).filter(item => !candidates.some(old => String(old.vod_id || "") === String(item.vod_id || ""))));
+    best = pickBestVod(merged, enrichedParams);
+  }
   if (!best || !best.vod_id) return [];
+  // 前置检查：用户请求集数 > 该 vod 已更新集数 → 直接返回空（避免兜底到第 1 集）
   const wantEp = toInt(params.episode, 0);
   if (params.type !== "movie" && wantEp > 0) {
     const updated = toInt(best.vod_continu, 0);
