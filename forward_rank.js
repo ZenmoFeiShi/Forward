@@ -4,7 +4,7 @@ WidgetMetadata = {
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.3.0",
+  version: "1.4.0",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -22,17 +22,26 @@ WidgetMetadata = {
     { title: "本周泰剧排行榜", description: "实时获取本周泰剧排行榜真实内容", requiresWebView: false, functionName: "getWeeklyThaiDrama", cacheDuration: 120, params: [] },
     { title: "本周综艺排行榜", description: "实时获取本周综艺排行榜真实内容", requiresWebView: false, functionName: "getWeeklyVariety", cacheDuration: 120, params: [] },
     { title: "本周纪录片排行榜", description: "实时获取本周纪录片排行榜真实内容", requiresWebView: false, functionName: "getWeeklyDocumentary", cacheDuration: 120, params: [] },
-    { id: "loadResource", title: "瓜子影视播放源", description: "仅返回瓜子影视 1080P 播放源", functionName: "loadResource", type: "stream", cacheDuration: 0, params: [] }
+    { id: "loadResource", title: "瓜子影视播放源", description: "返回瓜子影视播放源", functionName: "loadResource", type: "stream", cacheDuration: 0, params: [] }
   ]
 };
 
-const USER_AGENT = "MortiseKpxt/2 CFNetwork/3890.100.1 Darwin/27.0.0";
-const PLAY_USER_AGENT = "AppleCoreMedia/1.0.0.21F90 (iPhone; U; CPU OS 17_5 like Mac OS X; zh_cn)";
+const USER_AGENT = "LeanMirror/3 CFNetwork/3892.100.1 Darwin/27.0.0";
+const PLAY_USER_AGENT = "AppleCoreMedia/1.0.0.24A5390f (iPhone; U; CPU OS 27_0 like Mac OS X; zh_cn)";
 const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js";
 const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
 
 const APP_CONFIG = {
-  baseURL: "https://api.8b42w67.com",
+  baseURL: "",
+  baseURLs: [
+    "https://api.8b42w67.com",
+    "https://api.4pmyvfz.com",
+    "https://sdapi.s3432pr.com",
+    "https://sdapi.q5sn3gk.com",
+    "https://apinew.qwepe.com"
+  ],
+  thirdPartyDomainURL: "https://raw.githubusercontent.com/tdopops/jiafeimao/main/0103/jfm-ios-prod.json",
+  thirdPartyAes: { key: "m4nQCskrndxTCULX", iv: "92ilxgNlcweTTfvG" },
   versionCode: "2026033001",
   apiVersion: "3.0.5.0",
   productnumber: "1",
@@ -43,15 +52,20 @@ const APP_CONFIG = {
   requestPublicKey: "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCWJafJAdhTPWMrNpbmlk672o06smRwxe1LoHjy2XbLRaKIXfQJWgJTBhLH4qUIPMmpnIKQYqjMLTrJhwG5Bwsd3/15YHdL7eWad7lpomF5doOQmmexK2+gSBHmCOhXeumhrOD63vx8ERepxR6UCxTi5b5fZmqMdbLk45IW39mn6wIDAQAB-----END PUBLIC KEY-----",
   responsePrivateKey: "-----BEGIN RSA PRIVATE KEY-----MIICXQIBAAKBgQCM+iJdCeYFydG3DiFG0Ajr6IS0NENW1Bb2MSwrUdvLiI7nXHG+zZZuyqewVUPUPQRdEvhSMCyTKjjX9QajRJ1Uv+xVnsOmxEQQIhAIUa1dsXsN30nLGA+VuNHF7J1SE+Vh/46duR/0Q+Iq+3esSYlb3/PdN4wgK5ab+jKeR0JA2wIDAQABAoGAbst/CkPnRZFRgl5WhMKm4FDDSqTwb2MMELygjAMvjIxsUyRyOJR2r+gRViIMxtaVgViRVHaL8bTzK7ZkWxhn1LEM7RpWB1zjKFvXxE+dzxPrYY/Qw7dobzAAMyQhZ2+7PTO/plUYOxNgZPUzsvcoI44M3HRy1yFxGbF9z9LiMDECQQDTs5eXJnjEN1JmqbBotFw0III0/se/r0oDv4AvJdbxl64t64dZI2tS3BO7NL3OAOzf+WL14Pf2uADFDZz9kzHPAkEAqnn7TBlZXc6L70TnCaggMAN9C+2Iuik2Q2dePfTBI9IyJiC54k4G66iT+kQ5F6T4MGWf6jb7xUuUTk6AHck/NQJBALk+5oAh7v0rt5QUGkSUxjXq2GUNKLbn6Ok8sisPfnVrF8Qg3A+4+ZnI8A8ZSJkxoBUgwWKMWA5w1mOX1O7i1WsCQHV0qgHajUomnx9x18U9gz/Rh3yKYmPxNSPnunTxh4kIr+i5L5mOrRH9CkeqbbOuxBmES1PyIjHjSwFQ8NCU8ekCQQCwb4PirUbcqeHbjN0Nv6vm5pqsgJ29GhA9qiy2l+1Wb637STe9L2mEt7ImUd9FGy7k3Nnsn5eou/t2SV3OkGaU-----END RSA PRIVATE KEY-----",
   iosRequestSalt: "&ffddffujhjhgvdvdvdz4Y!s!2br",
-  token: "a2feae876a6dde906c50fcb21bd6fd26.292a22377b57f7f0da4295d2d7418982f1526588638bfda463933d481caa7cc3e3f12f688a61a944363d36bb6a98a494ef286d56c60778960dfcd190f006187ccccb7c6f2f7baa62885fffcdfebf027513a0d75692ffe6ef0b762267aa01f2c6a98c40d4a3e624d2dfff665312498e70c9b98a79c534d8ba0ccd5d5c08208110fefb31c47b2a6b0713406ff9e920891e.cf889b1687a0fb82c1e2a126059a7735b09b1737af63d1790ea0fbb46af647da",
+  token: "",
   tokenId: "",
-  deviceId: "F562B0EF-7748-46E7-9763-57940FEC3980",
-  ip: "52.195.184.154",
+  deviceId: "",
+  ip: "",
   lang: "zh_cn"
 };
 
 let __libsReady = false;
-let __refreshTried = false;
+let __authPromise = null;
+let __domainPromise = null;
+let __domainsReady = false;
+let __activeDomainIndex = 0;
+const AUTH_STORAGE_KEY = "gxf.auth.v2";
+const DOMAIN_STORAGE_KEY = "gxf.domains.v2";
 
 async function ensureLibs() {
   if (__libsReady && typeof CryptoJS !== "undefined" && typeof JSEncrypt !== "undefined") return;
@@ -135,45 +149,218 @@ function decryptResponse(responseData) {
   return JSON.parse(aesDecryptHex(responseData.response_key, aesInfo.key, aesInfo.iv));
 }
 
-async function refreshTokenIfNeeded() {
-  await ensureLibs();
-  const body = buildRequestBody({});
-  const response = await Widget.http.post(APP_CONFIG.baseURL + "/App/Authentication/Authenticator/refresh", body, { headers: buildHeaders() });
-  const root = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-  if (!root || root.code !== 200 || !root.data) return false;
-  const data = decryptResponse(root.data);
-  if (data && data.token) APP_CONFIG.token = data.token;
-  if (data && typeof data.token_id !== "undefined") APP_CONFIG.tokenId = data.token_id;
+function storageGet(key) {
+  try { return Widget.storage && Widget.storage.get ? Widget.storage.get(key) : null; } catch (e) { return null; }
+}
+
+function storageSet(key, value) {
+  try { if (Widget.storage && Widget.storage.set) Widget.storage.set(key, value); } catch (e) {}
+}
+
+function parseJSON(value, fallback = null) {
+  if (value == null) return fallback;
+  if (typeof value === "object") return value;
+  try { return JSON.parse(String(value)); } catch (e) { return fallback; }
+}
+
+function randomHex(size) {
+  const chars = "0123456789ABCDEF";
+  let out = "";
+  for (let i = 0; i < size; i++) out += chars.charAt(Math.floor(Math.random() * 16));
+  return out;
+}
+
+function createDeviceId() {
+  return `${randomHex(8)}-${randomHex(4)}-4${randomHex(3)}-${"89AB".charAt(Math.floor(Math.random() * 4))}${randomHex(3)}-${randomHex(12)}`;
+}
+
+function normalizeBaseURL(value) {
+  const url = String(value || "").trim().replace(/\/+$/, "");
+  return /^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(url) ? url : "";
+}
+
+function uniqueBaseURLs(values) {
+  const out = [];
+  for (const value of values || []) {
+    const url = normalizeBaseURL(value);
+    if (url && out.indexOf(url) < 0) out.push(url);
+  }
+  return out;
+}
+
+async function getPublicIP() {
+  try {
+    const response = await Widget.http.get("https://api.ipify.org/?format=json", { headers: { "User-Agent": USER_AGENT } });
+    const data = parseJSON(response && response.data, {});
+    return String(data && data.ip || "");
+  } catch (e) {
+    return "";
+  }
+}
+
+async function loadRemoteDomains() {
+  try {
+    const response = await Widget.http.get(APP_CONFIG.thirdPartyDomainURL, { headers: { "User-Agent": USER_AGENT } });
+    const root = parseJSON(response && response.data, null);
+    const encrypted = root && root.code === 200 && root.data && root.data.response_key;
+    if (!encrypted) return [];
+    const text = aesDecryptHex(encrypted, APP_CONFIG.thirdPartyAes.key, APP_CONFIG.thirdPartyAes.iv);
+    return uniqueBaseURLs(parseJSON(text, {}).list || []);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function initializeDomains(force = false) {
+  if (__domainsReady && !force && APP_CONFIG.baseURL) return APP_CONFIG.baseURL;
+  if (__domainPromise) return __domainPromise;
+  __domainPromise = (async () => {
+    const cached = parseJSON(storageGet(DOMAIN_STORAGE_KEY), {});
+    const cachedList = uniqueBaseURLs(cached && cached.list || []);
+    const remote = await loadRemoteDomains();
+    APP_CONFIG.baseURLs = uniqueBaseURLs([].concat(remote, cachedList, APP_CONFIG.baseURLs));
+    if (remote.length) storageSet(DOMAIN_STORAGE_KEY, JSON.stringify({ list: remote, updatedAt: Date.now() }));
+    const checks = APP_CONFIG.baseURLs.slice(0, 3).map(async (url, index) => {
+      try {
+        const response = await Widget.http.get(url + "/domain/check", { headers: { "User-Agent": USER_AGENT } });
+        const text = String(response && response.data || "").trim().toLowerCase();
+        if ((response && response.status && Number(response.status) >= 400) || (text && text !== "success")) throw new Error("domain check failed");
+        return { url, index };
+      } catch (e) {
+        return null;
+      }
+    });
+    const results = await Promise.all(checks);
+    const hit = results.filter(Boolean)[0];
+    APP_CONFIG.baseURL = hit ? hit.url : (APP_CONFIG.baseURLs[0] || "");
+    __activeDomainIndex = Math.max(0, APP_CONFIG.baseURLs.indexOf(APP_CONFIG.baseURL));
+    if (!APP_CONFIG.baseURL) throw new Error("瓜子 API 域名不可用");
+    __domainsReady = true;
+    return APP_CONFIG.baseURL;
+  })();
+  try { return await __domainPromise; } finally { __domainPromise = null; }
+}
+
+function loadStoredAuth() {
+  const auth = parseJSON(storageGet(AUTH_STORAGE_KEY), {});
+  if (!auth || !auth.deviceId || !auth.token) return false;
+  APP_CONFIG.deviceId = String(auth.deviceId);
+  APP_CONFIG.token = String(auth.token);
+  APP_CONFIG.tokenId = String(auth.tokenId || "");
+  APP_CONFIG.ip = String(auth.ip || "");
   return true;
+}
+
+function saveAuth() {
+  storageSet(AUTH_STORAGE_KEY, JSON.stringify({
+    deviceId: APP_CONFIG.deviceId,
+    token: APP_CONFIG.token,
+    tokenId: APP_CONFIG.tokenId,
+    ip: APP_CONFIG.ip,
+    updatedAt: Date.now()
+  }));
+}
+
+async function rawPrivatePost(path, params = {}, baseURL = "") {
+  const url = normalizeBaseURL(baseURL || APP_CONFIG.baseURL);
+  if (!url) throw new Error("瓜子 API 域名为空");
+  const response = await Widget.http.post(url + path, buildRequestBody(params), { headers: buildHeaders() });
+  const root = parseJSON(response && response.data, null);
+  if (!root) throw new Error("瓜子 API 响应格式异常");
+  let data = root.data;
+  if (data && data.response_key && data.keys) data = decryptResponse(data);
+  return { root, data };
+}
+
+async function authenticate(force = false) {
+  if (__authPromise) return __authPromise;
+  __authPromise = (async () => {
+    await ensureLibs();
+    await initializeDomains(false);
+    if (!force && !APP_CONFIG.token) loadStoredAuth();
+    if (!APP_CONFIG.deviceId) APP_CONFIG.deviceId = createDeviceId();
+    if (!APP_CONFIG.ip) APP_CONFIG.ip = await getPublicIP();
+    const payload = { new_key: APP_CONFIG.deviceId, old_key: APP_CONFIG.deviceId };
+    APP_CONFIG.token = "";
+    APP_CONFIG.tokenId = "";
+    let lastError = null;
+    const total = Math.max(1, APP_CONFIG.baseURLs.length);
+    for (let attempt = 0; attempt < total; attempt++) {
+      const index = (__activeDomainIndex + attempt) % total;
+      const baseURL = APP_CONFIG.baseURLs[index];
+      APP_CONFIG.baseURL = baseURL;
+      try {
+        let result = await rawPrivatePost("/App/Authentication/Device/signIn", payload, baseURL);
+        if (!result.root || result.root.code !== 200 || !result.data || !result.data.token) {
+          result = await rawPrivatePost("/App/Authentication/Device/signUp", payload, baseURL);
+        }
+        if (!result.root || result.root.code !== 200 || !result.data || !result.data.token) {
+          throw new Error((result.root && result.root.msg) || "瓜子设备鉴权失败");
+        }
+        APP_CONFIG.token = String(result.data.token);
+        APP_CONFIG.tokenId = String(result.data.token_id || "");
+        __activeDomainIndex = index;
+        saveAuth();
+        return true;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError || new Error("瓜子设备鉴权失败");
+  })();
+  try { return await __authPromise; } finally { __authPromise = null; }
+}
+
+function shouldReauthenticate(root) {
+  const code = Number(root && root.code || 0);
+  const msg = String(root && root.msg || "");
+  return code === 401 || code === 403 || code === 451 || /token|登录|鉴权|认证|设备.*不存在|过期/i.test(msg);
+}
+
+function shouldRotateDomain(error, root) {
+  if (error) return true;
+  const code = Number(root && root.code || 0);
+  return code === 502 || code === 503 || code === 504 || code === 404;
 }
 
 async function privatePost(path, params = {}) {
   await ensureLibs();
-  let body = buildRequestBody(params);
-  let response = await Widget.http.post(APP_CONFIG.baseURL + path, body, { headers: buildHeaders() });
-  let root = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-  if (root && root.code === 451 && !__refreshTried) {
-    __refreshTried = true;
-    if (await refreshTokenIfNeeded()) {
-      body = buildRequestBody(params);
-      response = await Widget.http.post(APP_CONFIG.baseURL + path, body, { headers: buildHeaders() });
-      root = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+  await initializeDomains(false);
+  if (!APP_CONFIG.token) loadStoredAuth();
+  if (!APP_CONFIG.token) await authenticate(false);
+  let authRetried = false;
+  let lastError = null;
+  const total = Math.max(1, APP_CONFIG.baseURLs.length);
+  for (let attempt = 0; attempt < total; attempt++) {
+    const index = (__activeDomainIndex + attempt) % total;
+    const baseURL = APP_CONFIG.baseURLs[index];
+    APP_CONFIG.baseURL = baseURL;
+    try {
+      let result = await rawPrivatePost(path, params, baseURL);
+      if (shouldReauthenticate(result.root) && !authRetried) {
+        authRetried = true;
+        await authenticate(true);
+        result = await rawPrivatePost(path, params, APP_CONFIG.baseURL);
+      }
+      if (result.root && result.root.code === 200) {
+        __activeDomainIndex = Math.max(0, APP_CONFIG.baseURLs.indexOf(APP_CONFIG.baseURL));
+        return result.data != null ? result.data : result.root;
+      }
+      if (shouldReauthenticate(result.root) || !shouldRotateDomain(null, result.root)) {
+        const error = new Error((result.root && result.root.msg) || "请求失败");
+        error.noRotate = true;
+        throw error;
+      }
+      lastError = new Error((result.root && result.root.msg) || "域名请求失败");
+    } catch (e) {
+      lastError = e;
+      if (e && e.noRotate) break;
     }
   }
-  if (!root || root.code !== 200) throw new Error((root && root.msg) || "请求失败");
-  return root.data && root.data.response_key ? decryptResponse(root.data) : (root.data || root);
+  throw lastError || new Error("瓜子 API 全部域名不可用");
 }
 
 function safeArray(v) { return Array.isArray(v) ? v : []; }
-
-function sleep(ms) {
-  const t = Number(ms) || 0;
-  if (t <= 0) return Promise.resolve();
-  if (typeof setTimeout === "function") return new Promise(r => setTimeout(r, t));
-  const end = Date.now() + t;
-  while (Date.now() < end) {}
-  return Promise.resolve();
-}
 
 function forwardInfoGet(url) {
   return Widget.http.get(url, { headers: { "User-Agent": USER_AGENT } }).then(resp => typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data);
@@ -256,9 +443,16 @@ async function searchForwardEntity(item) {
   };
 }
 
+function stripQualityTag(text) {
+  const s = String(text || "").trim();
+  const out = s.replace(/(^|[\s._\-]|[\u4e00-\u9fff\d])TC$/, "$1").replace(/[\s._\-]+$/, "").trim();
+  return out || s;
+}
+
 async function mapRankItems(data) {
   const out = [];
   for (const item of safeArray(data.list)) {
+    if (item && item.title) item.title = stripQualityTag(item.title);
     const entity = await searchForwardEntity(item);
     const seasonNum = extractCardSeason(item.title || "");
     const tagsArr = safeArray(item.tags);
@@ -609,18 +803,6 @@ function pickBestVod(list, params) {
   return top.item;
 }
 
-function parseParamQuery(text) {
-  const out = {};
-  String(text || "").split("&").forEach(part => {
-    if (!part || part.indexOf("=") < 0) return;
-    const idx = part.indexOf("=");
-    const k = part.slice(0, idx);
-    const v = part.slice(idx + 1);
-    out[k] = v;
-  });
-  return out;
-}
-
 function extractEpisodeNumber(text) {
   const t = cleanText(text);
   if (!t) return 0;
@@ -660,82 +842,67 @@ function isFakePlayUrl(url) {
   return GXF_FAKE_HOST_RE.test(u);
 }
 
-async function probePlayUrl(url) {
-  // 拉一次 m3u8 核对真伪：命中占位域名、或呈现“占位宣传片”特征（极短时长）即判为占位。
-  // 源站对 VIP/被风控请求有两种投毒方式：302 跳占位域名，或用正常域名直接返回占位 m3u8。
+function decodePlaylistBody(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text || text.indexOf("#EXTM3U") >= 0) return text;
+  if (!/^[A-Za-z0-9+/=\r\n]+$/.test(text)) return text;
   try {
-    const probe = await Widget.http.get(url, { headers: { "User-Agent": PLAY_USER_AGENT }, allow_redirects: false });
+    if (typeof CryptoJS !== "undefined") return CryptoJS.enc.Base64.parse(text).toString(CryptoJS.enc.Utf8);
+  } catch (e) {}
+  return text;
+}
+
+async function probePlayUrl(url) {
+  try {
+    const probe = await Widget.http.get(url, { headers: { "User-Agent": PLAY_USER_AGENT }, allow_redirects: true });
     const loc = probe && probe.headers && (probe.headers.location || probe.headers.Location);
-    if (loc) return isFakePlayUrl(loc) ? null : loc;
-    const body = typeof probe.data === "string" ? probe.data : "";
-    if (body) {
-      if (GXF_FAKE_HOST_RE.test(body)) return null;
-      // master playlist（含子流）不含 EXTINF，无法在此判时长，直接放行
-      if (/#EXT-X-STREAM-INF/i.test(body)) return url;
-      if (/#EXTINF/i.test(body)) {
-        let total = 0;
-        const re = /#EXTINF:([\d.]+)/g;
-        let m;
-        while ((m = re.exec(body)) !== null) total += parseFloat(m[1]) || 0;
-        // 占位宣传片约 100 秒；正片远长于此。带 ENDLIST 的完整短片才判占位，避免误伤直播/分段流。
-        if (total > 0 && total < 200 && /#EXT-X-ENDLIST/i.test(body)) return null;
+    const finalUrl = loc || url;
+    if (isFakePlayUrl(finalUrl)) return null;
+    const body = decodePlaylistBody(probe && probe.data);
+    if (!body) return finalUrl;
+    if (GXF_FAKE_HOST_RE.test(body)) return null;
+    if (/#EXT-X-STREAM-INF/i.test(body)) return finalUrl;
+    if (/#EXTINF/i.test(body)) {
+      let total = 0;
+      let count = 0;
+      const re = /#EXTINF:([\d.]+)/g;
+      let m;
+      while ((m = re.exec(body)) !== null) {
+        total += parseFloat(m[1]) || 0;
+        count++;
       }
+      if (/#EXT-X-ENDLIST/i.test(body) && count > 0 && total < 200) return null;
     }
-    return url;
+    return finalUrl;
   } catch (e) {
-    return url;
+    return null;
   }
 }
 
-async function resolveOneRes(q, res) {
-  // 单清晰度解析：源站 CDN 会秒级随机把真实流投毒成“占位宣传片”（约100秒，跳/直出“办公隔断.cn”）。
-  // 占位检测命中即重试 showOne 换新签名地址，多试几次以命中正片窗口；全失败才放弃该清晰度。
-  for (let attempt = 0; attempt < 5; attempt++) {
-    let data = null;
-    try {
-      data = await privatePost("/App/Resource/VurlDetail/showOne", {
-        vod_d_id: q.vod_d_id,
-        vurl_id: q.vurl_id,
-        domain_type: q.domain_type,
-        resolution: res,
-        type: "play"
-      });
-    } catch (e) {
-      data = null;
-    }
-    if (data && data.url && !isFakePlayUrl(data.url)) {
-      const real = await probePlayUrl(data.url);
-      if (real) return { url: real, vip: data.vip, m3u8: data.m3u8 };
-    }
-    if (attempt < 4) await sleep(700);
-  }
-  return null;
+function compareResolution(a, b) {
+  return toInt(b && b.resolution, 0) - toInt(a && a.resolution, 0);
 }
 
-async function resolvePlayUrls(ep) {
-  const out = [];
-  for (const res of ["1080"]) {
-    const slot = ((ep.play || {})[res]) || {};
-    if (!slot.param || String(slot.show_type) !== "0") continue;
-    const q = parseParamQuery(slot.param);
-    if (!q.vod_d_id || !q.vurl_id) continue;
-    const r = await resolveOneRes(q, res);
-    if (r && r.url) {
-      out.push({
-        name: `瓜子影视 ${res}P`,
-        description: [
-          `清晰度：${res}P`,
-          r.vip ? `VIP：${r.vip}` : "",
-          r.m3u8 ? `m3u8：${r.m3u8}` : ""
-        ].filter(Boolean).join("\n"),
-        url: r.url,
-        // CDN 按 UA 投毒，播放时必须带 AppleCoreMedia UA 才能拿到正片而非占位宣传片。
-        customHeaders: { "User-Agent": PLAY_USER_AGENT },
-        headers: { "User-Agent": PLAY_USER_AGENT }
-      });
-    }
+async function resolvePlayUrls(ep, params = {}) {
+  const s = toInt(params.season, 0);
+  const e = toInt(params.episode, 0);
+  const label = params.type !== "movie" && s > 0 && e > 0 ? ` S${s}E${e}` : " 正片";
+  const details = safeArray(await privatePost("/App/Resource/Vod/vurlDetail", { vurl_id: ep.id }));
+  const ordered = details.slice().sort(compareResolution);
+  for (const item of ordered) {
+    if (!item || !item.url || isFakePlayUrl(item.url)) continue;
+    const real = await probePlayUrl(item.url);
+    if (!real) continue;
+    const resolution = cleanText(item.name || item.resolution || "");
+    return [{
+      name: `瓜子影视${label}${resolution ? " " + resolution : ""}`,
+      description: resolution,
+      url: real,
+      customHeaders: { "User-Agent": PLAY_USER_AGENT },
+      headers: { "User-Agent": PLAY_USER_AGENT }
+    }];
   }
-  return out;
+  return [];
 }
 
 function parseGxfMarker(text) {
@@ -806,5 +973,5 @@ async function loadResource(rawParams = {}) {
   const vurlData = await privatePost("/App/Resource/Vurl/show", { vod_d_id: best.vod_id, vurl_cloud_id: "2" });
   const pickedEp = pickEpisode(vurlData && vurlData.list, params);
   if (!pickedEp) return [];
-  return await resolvePlayUrls(pickedEp);
+  return await resolvePlayUrls(pickedEp, params);
 }
