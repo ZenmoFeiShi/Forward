@@ -4,7 +4,7 @@ WidgetMetadata = {
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.4.0",
+  version: "1.4.1",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -893,10 +893,9 @@ async function resolvePlayUrls(ep, params = {}) {
     if (!item || !item.url || isFakePlayUrl(item.url)) continue;
     const real = await probePlayUrl(item.url);
     if (!real) continue;
-    const resolution = cleanText(item.name || item.resolution || "");
     return [{
-      name: `瓜子影视${label}${resolution ? " " + resolution : ""}`,
-      description: resolution,
+      name: `瓜子影视${label}`,
+      description: "瓜子影视",
       url: real,
       customHeaders: { "User-Agent": PLAY_USER_AGENT },
       headers: { "User-Agent": PLAY_USER_AGENT }
