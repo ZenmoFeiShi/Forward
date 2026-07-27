@@ -1,10 +1,10 @@
 WidgetMetadata = {
-  id: "https://t.me/Nzmgs?rev=20260713c",
+  id: "https://t.me/Nzmgs?rev=20260726b",
   title: "聚合实时榜单",
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.4.1",
+  version: "1.4.3",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -66,6 +66,8 @@ let __domainsReady = false;
 let __activeDomainIndex = 0;
 const AUTH_STORAGE_KEY = "gxf.auth.v2";
 const DOMAIN_STORAGE_KEY = "gxf.domains.v2";
+const MEDIA_BINDING_PREFIX = "gxf.media.v3.";
+const __tmdbMovieDetailCache = {};
 
 async function ensureLibs() {
   if (__libsReady && typeof CryptoJS !== "undefined" && typeof JSEncrypt !== "undefined") return;
@@ -155,6 +157,48 @@ function storageGet(key) {
 
 function storageSet(key, value) {
   try { if (Widget.storage && Widget.storage.set) Widget.storage.set(key, value); } catch (e) {}
+}
+
+function mediaBindingKey(mediaType, tmdbId) {
+  const type = normalizeMediaType(mediaType);
+  const id = String(tmdbId || "").trim();
+  return type && id ? MEDIA_BINDING_PREFIX + type + "." + id : "";
+}
+
+function saveMediaBinding(mediaType, tmdbId, item) {
+  const key = mediaBindingKey(mediaType, tmdbId);
+  if (!key || !item || !item.vod_id) return;
+  storageSet(key, JSON.stringify({
+    vodId: String(item.vod_id),
+    title: String(item.title || item.vod_name || ""),
+    year: String(item.vod_year || "").slice(0, 4),
+    area: String(item.vod_area || item.area || ""),
+    category: mediaType === "movie" ? "movie" : "tv",
+    updatedAt: Date.now()
+  }));
+}
+
+function loadMediaBinding(mediaType, tmdbId) {
+  const key = mediaBindingKey(mediaType, tmdbId);
+  return key ? parseJSON(storageGet(key), null) : null;
+}
+
+async function getTmdbMovieContext(tmdbId) {
+  const id = String(tmdbId || "").replace(/^movie\./i, "").trim();
+  if (!/^\d+$/.test(id)) return null;
+  if (!__tmdbMovieDetailCache[id]) {
+    __tmdbMovieDetailCache[id] = Widget.tmdb.get("movie/" + id, { params: { language: "zh-CN", append_to_response: "credits" } }).catch(() => null);
+  }
+  const data = await __tmdbMovieDetailCache[id];
+  if (!data || !data.id) return null;
+  return {
+    tmdbId: String(data.id),
+    title: cleanText(data.title || data.original_title || ""),
+    originalTitle: cleanText(data.original_title || ""),
+    releaseDate: String(data.release_date || ""),
+    year: String(data.release_date || "").slice(0, 4),
+    actors: safeArray(data.credits && data.credits.cast).slice(0, 8).map(x => x && x.name).filter(Boolean).join("/")
+  };
 }
 
 function parseJSON(value, fallback = null) {
@@ -362,10 +406,6 @@ async function privatePost(path, params = {}) {
 
 function safeArray(v) { return Array.isArray(v) ? v : []; }
 
-function forwardInfoGet(url) {
-  return Widget.http.get(url, { headers: { "User-Agent": USER_AGENT } }).then(resp => typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data);
-}
-
 function normalizeTitle(text) {
   return String(text || "").toLowerCase().replace(/[\s·•・:：\-–—_!！?？.,，。、"'`~()（）\[\]【】]/g, "");
 }
@@ -396,15 +436,14 @@ async function searchForwardEntity(item) {
   const keyword = stripCardSeason(rawTitle) || rawTitle;
   const cacheKey = mediaType + "::" + keyword;
   if (!__tmdbSearchCache[cacheKey]) {
-    const url = `${"https://forwardinfo.vvebo.vip/search/" + mediaType}?query=${encodeURIComponent(keyword)}&language=zh-CN&page=1`;
-    __tmdbSearchCache[cacheKey] = forwardInfoGet(url).catch(() => ({ results: [] }));
+    __tmdbSearchCache[cacheKey] = Widget.tmdb.get("search/" + mediaType, { params: { query: keyword, language: "zh-CN", page: 1 } }).catch(() => ({ results: [] }));
   }
   const data = await __tmdbSearchCache[cacheKey];
   const results = safeArray(data && data.results);
   if (!results.length) return null;
 
-  const rawNorm = normalizeTitle(rawTitle);
-  const baseNorm = normalizeTitle(keyword);
+  const rawNorm = normalizeTitle(stripQualityTag(rawTitle));
+  const baseNorm = normalizeTitle(stripQualityTag(keyword));
   const seasonNum = extractCardSeason(rawTitle);
   const year = String(item.vod_year || "").slice(0, 4);
   let best = null;
@@ -413,11 +452,13 @@ async function searchForwardEntity(item) {
     const name = String(r.name || r.title || "");
     const nameNorm = normalizeTitle(name);
     const firstAirDate = String(r.first_air_date || r.release_date || "");
+    const releaseYear = firstAirDate.slice(0, 4);
+    if (isMovie && year && releaseYear && releaseYear !== year) continue;
     let score = 0;
     if (nameNorm === rawNorm) score += 100;
     if (nameNorm === baseNorm) score += 90;
     if (nameNorm.includes(baseNorm) || baseNorm.includes(nameNorm)) score += 35;
-    if (year && firstAirDate && firstAirDate.slice(0, 4) === year) score += 10;
+    if (year && releaseYear === year) score += 80;
     if (r.media_type === mediaType || !r.media_type) score += 8;
     if (score > bestScore) {
       bestScore = score;
@@ -469,6 +510,7 @@ async function mapRankItems(data) {
     const gxfMarker = `[GXF cat=${cat}|area=${item.vod_area || item.area || ""}|t=${item.t_id || ""}|vid=${item.vod_id || ""}]`;
     const genreOut = (tagsArr.length ? tagsArr.join(" / ") + " " : "") + gxfMarker;
     if (entity && entity.id) {
+      saveMediaBinding(entity.mediaType, entity.id, item);
       out.push({
         id: entity.id,
         type: "tmdb",
@@ -616,7 +658,7 @@ function firstPositiveInt(values) {
 }
 
 function buildPlaybackContext(params = {}) {
-  const mediaType = normalizeMediaType(params.type || params.mediaType);
+  const mediaType = normalizeMediaType(params.type) || normalizeMediaType(params.mediaType);
   const title = cleanText(params.title || "");
   const seriesName = cleanText(params.seriesName || "");
   const episodeName = cleanText(params.episodeName || "");
@@ -704,13 +746,15 @@ function actorScore(item, params) {
 
 function scoreCandidate(item, want, params) {
   const name = String(item.vod_name || item.title || "");
-  const normName = normalizeName(name);
-  const baseName = normalizeName(stripSeasonHints(name));
-  const year = String(item.vod_year || "");
-  const seasonNum = extractSeasonNumber(name);
+  const matchName = stripQualityTag(name);
+  const normName = normalizeName(matchName);
+  const baseName = normalizeName(stripSeasonHints(matchName));
+  const year = String(item.vod_year || "").slice(0, 4);
+  const seasonNum = extractSeasonNumber(matchName);
   const sameFranchise = !!want.baseNorm && baseName === want.baseNorm;
   const typeScore = typeScoreByParams(item, params);
   if (!sameFranchise || typeScore < 0) return -1e9;
+  if (params.type === "movie" && want.year && year && year !== want.year) return -1e9;
   if (params.type === "movie" && seasonNum != null) return -1e9;
   if (params.type !== "movie" && want.season > 1 && seasonNum !== want.season) return -1e9;
   if (params.type !== "movie" && want.season === 1 && seasonNum != null && seasonNum !== 1) return -1e9;
@@ -740,7 +784,6 @@ function scoreCandidate(item, want, params) {
     score -= 15;
   }
   if (want.year && year === want.year) score += 70;
-  if (want.year && year && year !== want.year) score -= 20;
   if (/解说|速看|合集|全系列|电影解说|预告|花絮|彩蛋/.test(name)) score -= 80;
   // 集数容量兜底：候选总集数若装不下 want.episode，强扣分（防止挑到只有 10 集的同名剧集）
   const wantEp = toInt(params.episode, 0);
@@ -762,22 +805,25 @@ function pickBestVod(list, params) {
   const fullText = [rawSeries, rawEpisodeName].filter(Boolean).join(" ");
   const inferredSeason = toInt(params.season, 0) || extractSeasonNumber(fullText) || extractSeasonNumber(rawSeries) || extractSeasonNumber(rawEpisodeName) || 0;
   const inferredYear = params.type === "movie" ? (String(params.premiereDate || params.releaseDate || "").slice(0, 4) || extractYear(fullText) || "") : "";
-  const baseTitle = stripSeasonHints(rawSeries || rawEpisodeName || fullText);
+  const matchSeries = params.type === "movie" ? stripQualityTag(rawSeries) : rawSeries;
+  const baseTitle = stripSeasonHints(matchSeries || rawEpisodeName || fullText);
   const want = {
     season: inferredSeason,
     year: inferredYear,
-    fullNorm: normalizeName(rawSeries || fullText),
-    baseNorm: normalizeName(baseTitle || rawSeries || fullText)
+    fullNorm: normalizeName(matchSeries || fullText),
+    baseNorm: normalizeName(baseTitle || matchSeries || fullText)
   };
   // 0) 若 params 中带 GXF 锁定 vod_id，且候选里存在，直接命中
   const lockVid = String(params.__gxfVid || "").trim();
   if (lockVid && !(params.type !== "movie" && want.season > 1)) {
     const hit = safeArray(list).find(it => String(it.vod_id || "") === lockVid);
     if (hit) {
-      const hitName = String(hit.vod_name || hit.title || "");
+      const hitName = stripQualityTag(String(hit.vod_name || hit.title || ""));
       const hitBase = normalizeName(stripSeasonHints(hitName));
       const hitSeason = extractSeasonNumber(hitName);
-      if (hitBase === want.baseNorm && (!want.season || hitSeason === want.season || (want.season === 1 && hitSeason == null))) return hit;
+      const hitYear = String(hit.vod_year || "").slice(0, 4);
+      const yearMatches = params.type !== "movie" || !want.year || !hitYear || hitYear === want.year;
+      if (yearMatches && hitBase === want.baseNorm && (!want.season || hitSeason === want.season || (want.season === 1 && hitSeason == null))) return hit;
     }
   }
   const ranked = safeArray(list)
@@ -786,11 +832,13 @@ function pickBestVod(list, params) {
     .sort((a, b) => b.score - a.score);
   if (!ranked.length) return null;
   const top = ranked[0];
-  const topName = String(top.item.vod_name || top.item.title || "");
+  const topName = stripQualityTag(String(top.item.vod_name || top.item.title || ""));
   const topBase = normalizeName(stripSeasonHints(topName));
   const topSeason = extractSeasonNumber(topName);
+  const topYear = String(top.item.vod_year || "").slice(0, 4);
   const sameTitle = !!want.baseNorm && topBase === want.baseNorm;
   if (!sameTitle || top.score < 120) return null;
+  if (params.type === "movie" && want.year && topYear && topYear !== want.year) return null;
   if (want.season > 1 && topSeason !== want.season) return null;
   if (want.season === 1 && topSeason != null && topSeason !== 1) return null;
   // 调试日志（仅在 console 可用时）
@@ -938,20 +986,52 @@ function inferCategoryFromParams(params) {
 }
 
 async function loadResource(rawParams = {}) {
-  const params = buildPlaybackContext(rawParams);
+  const seed = Object.assign({}, rawParams);
+  const initialType = normalizeMediaType(seed.type) || normalizeMediaType(seed.mediaType);
+  const rawTmdbId = seed.tmdbId || (initialType === "movie" && /^\d+$/.test(String(seed.id || "")) ? seed.id : "");
+  const tmdbId = String(rawTmdbId || "").replace(/^movie\./i, "").trim();
+  let movieContext = null;
+  let binding = null;
+  if (initialType === "movie") {
+    binding = loadMediaBinding("movie", tmdbId);
+    if (tmdbId) movieContext = await getTmdbMovieContext(tmdbId);
+    if (movieContext) {
+      seed.title = movieContext.title || seed.title;
+      seed.seriesName = movieContext.title || seed.seriesName || seed.title;
+      seed.originalTitle = movieContext.originalTitle || seed.originalTitle;
+      seed.releaseDate = movieContext.releaseDate || seed.releaseDate;
+      seed.premiereDate = movieContext.releaseDate || seed.premiereDate;
+      if (binding && binding.year && movieContext.year && binding.year !== movieContext.year) binding = null;
+    } else if (binding) {
+      seed.seriesName = binding.title || seed.seriesName || seed.title;
+      seed.releaseDate = binding.year || seed.releaseDate;
+      seed.premiereDate = binding.year || seed.premiereDate;
+    }
+  }
+  const params = buildPlaybackContext(seed);
   const rawSeries = String(params.seriesName || "").trim();
   const searchKeyword = stripSeasonHints(rawSeries) || rawSeries;
   if (!searchKeyword) return [];
   if (params.type !== "movie" && (toInt(params.season, 0) <= 0 || toInt(params.episode, 0) <= 0)) return [];
   const meta = inferCategoryFromParams(params);
   const enrichedParams = Object.assign({}, params, {
-    __gxfCategory: meta.cat,
-    __gxfArea: meta.area,
-    __gxfVid: meta.vid,
-    __gxfActor: ""
+    __gxfCategory: binding && binding.category || meta.cat,
+    __gxfArea: binding && binding.area || meta.area,
+    __gxfVid: binding && binding.vodId || meta.vid,
+    __gxfActor: movieContext && movieContext.actors || ""
   });
   const searchData = await privatePost("/App/Index/findMoreVod", { keywords: searchKeyword, order_val: "" });
   const candidates = safeArray(searchData && searchData.list);
+  if (params.type === "movie" && !String(params.premiereDate || params.releaseDate || "").slice(0, 4)) {
+    const wantedName = normalizeName(stripQualityTag(searchKeyword));
+    const years = [];
+    for (const item of candidates) {
+      if (normalizeName(stripQualityTag(item.vod_name || item.title || "")) !== wantedName) continue;
+      const y = String(item.vod_year || "").slice(0, 4);
+      if (y && years.indexOf(y) < 0) years.push(y);
+    }
+    if (years.length > 1) return [];
+  }
   let best = pickBestVod(candidates, enrichedParams);
   if (!best && params.type !== "movie" && toInt(params.season, 0) > 1) {
     const seasonKeyword = rawSeries + " 第" + params.season + "季";
@@ -960,7 +1040,7 @@ async function loadResource(rawParams = {}) {
     best = pickBestVod(merged, enrichedParams);
   }
   if (!best || !best.vod_id) return [];
-  // 前置检查：用户请求集数 > 该 vod 已更新集数 → 直接返回空（避免兜底到第 1 集）
+  if (params.type === "movie" && tmdbId) saveMediaBinding("movie", tmdbId, best);
   const wantEp = toInt(params.episode, 0);
   if (params.type !== "movie" && wantEp > 0) {
     const updated = toInt(best.vod_continu, 0);
