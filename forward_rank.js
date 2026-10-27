@@ -4,7 +4,7 @@ WidgetMetadata = {
   description: "聚合各平台实时榜单数据",
   author: "TG@ZenMoFiShi",
   site: "https://t.me/Nzmgs",
-  version: "1.4.3",
+  version: "1.4.4",
   requiredVersion: "0.0.1",
   modules: [
     { title: "Netflix新片榜", description: "实时获取 Netflix 新片榜真实内容", requiresWebView: false, functionName: "getNetflixNew", cacheDuration: 120, params: [] },
@@ -26,14 +26,17 @@ WidgetMetadata = {
   ]
 };
 
-const USER_AGENT = "LeanMirror/3 CFNetwork/3892.100.1 Darwin/27.0.0";
+const USER_AGENT = "Phenomara/1 CFNetwork/3896.200.61 Darwin/27.2.0";
 const PLAY_USER_AGENT = "AppleCoreMedia/1.0.0.24A5390f (iPhone; U; CPU OS 27_0 like Mac OS X; zh_cn)";
-const LIB_CRYPTO_JS = "https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js";
-const LIB_JSENCRYPT = "https://cdn.jsdelivr.net/npm/jsencrypt@3.3.2/bin/jsencrypt.min.js";
 
 const APP_CONFIG = {
   baseURL: "",
   baseURLs: [
+    "https://api.sef5w7.com",
+    "https://api.mxtxqe.com",
+    "https://sdapi.u4gdp3.com",
+    "https://sdapi.4zu76s.com",
+    "https://sdapi.re3k7n.com",
     "https://api.8b42w67.com",
     "https://api.4pmyvfz.com",
     "https://sdapi.s3432pr.com",
@@ -43,7 +46,7 @@ const APP_CONFIG = {
   thirdPartyDomainURL: "https://raw.githubusercontent.com/tdopops/jiafeimao/main/0103/jfm-ios-prod.json",
   thirdPartyAes: { key: "m4nQCskrndxTCULX", iv: "92ilxgNlcweTTfvG" },
   versionCode: "2026033001",
-  apiVersion: "3.0.5.0",
+  apiVersion: "3.0.6.3",
   productnumber: "1",
   platform: "2",
   packageName: "com.jfm202203",
@@ -59,7 +62,6 @@ const APP_CONFIG = {
   lang: "zh_cn"
 };
 
-let __libsReady = false;
 let __authPromise = null;
 let __domainPromise = null;
 let __domainsReady = false;
@@ -69,30 +71,371 @@ const DOMAIN_STORAGE_KEY = "gxf.domains.v2";
 const MEDIA_BINDING_PREFIX = "gxf.media.v3.";
 const __tmdbMovieDetailCache = {};
 
-async function ensureLibs() {
-  if (__libsReady && typeof CryptoJS !== "undefined" && typeof JSEncrypt !== "undefined") return;
-  const g = (function () {
-    if (typeof globalThis !== "undefined") return globalThis;
-    if (typeof self !== "undefined") return self;
-    if (typeof window !== "undefined") return window;
-    return this;
+const GxCrypto = (function () {
+  const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+  function utf8Encode(str) {
+    const s = String(str == null ? "" : str);
+    const out = [];
+    for (let i = 0; i < s.length; i++) {
+      let c = s.charCodeAt(i);
+      if (c >= 0xd800 && c <= 0xdbff && i + 1 < s.length) {
+        const d = s.charCodeAt(i + 1);
+        if (d >= 0xdc00 && d <= 0xdfff) {
+          c = 0x10000 + ((c - 0xd800) << 10) + (d - 0xdc00);
+          i++;
+        }
+      }
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+      else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+      else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    }
+    return out;
+  }
+
+  function utf8Decode(bytes) {
+    let out = "";
+    let i = 0;
+    while (i < bytes.length) {
+      const a = bytes[i++];
+      let c;
+      if (a < 0x80) c = a;
+      else if (a >= 0xf0) c = ((a & 7) << 18) | ((bytes[i++] & 63) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63);
+      else if (a >= 0xe0) c = ((a & 15) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63);
+      else if (a >= 0xc0) c = ((a & 31) << 6) | (bytes[i++] & 63);
+      else c = 0xfffd;
+      if (c > 0xffff) {
+        c -= 0x10000;
+        out += String.fromCharCode(0xd800 + (c >> 10), 0xdc00 + (c & 1023));
+      } else {
+        out += String.fromCharCode(c);
+      }
+    }
+    return out;
+  }
+
+  function hexToBytes(hex) {
+    const h = String(hex || "").replace(/[^0-9a-f]/gi, "");
+    const out = new Array(h.length >> 1);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+    return out;
+  }
+
+  function bytesToHex(bytes) {
+    let out = "";
+    for (let i = 0; i < bytes.length; i++) out += (bytes[i] < 16 ? "0" : "") + bytes[i].toString(16);
+    return out;
+  }
+
+  function base64ToBytes(text) {
+    const s = String(text || "").replace(/[^A-Za-z0-9+/]/g, "");
+    const out = [];
+    let buf = 0;
+    let bits = 0;
+    for (let i = 0; i < s.length; i++) {
+      buf = (buf << 6) | B64.indexOf(s.charAt(i));
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        out.push((buf >> bits) & 255);
+      }
+    }
+    return out;
+  }
+
+  function bytesToBase64(bytes) {
+    let out = "";
+    for (let i = 0; i < bytes.length; i += 3) {
+      const a = bytes[i];
+      const b = i + 1 < bytes.length ? bytes[i + 1] : 0;
+      const c = i + 2 < bytes.length ? bytes[i + 2] : 0;
+      const n = (a << 16) | (b << 8) | c;
+      out += B64.charAt((n >> 18) & 63) + B64.charAt((n >> 12) & 63);
+      out += i + 1 < bytes.length ? B64.charAt((n >> 6) & 63) : "=";
+      out += i + 2 < bytes.length ? B64.charAt(n & 63) : "=";
+    }
+    return out;
+  }
+
+  const SBOX = new Array(256);
+  const INV_SBOX = new Array(256);
+  (function () {
+    let p = 1;
+    let q = 1;
+    do {
+      p = p ^ ((p << 1) & 255) ^ (p & 128 ? 0x1b : 0);
+      q ^= q << 1;
+      q ^= q << 2;
+      q ^= q << 4;
+      q &= 255;
+      if (q & 128) q ^= 0x09;
+      const x = q ^ ((q << 1 | q >> 7) & 255) ^ ((q << 2 | q >> 6) & 255) ^ ((q << 3 | q >> 5) & 255) ^ ((q << 4 | q >> 4) & 255) ^ 0x63;
+      SBOX[p] = x;
+      INV_SBOX[x] = p;
+    } while (p !== 1);
+    SBOX[0] = 0x63;
+    INV_SBOX[0x63] = 0;
   })();
-  if (!g.window) g.window = g;
-  if (!g.self) g.self = g;
-  if (!g.global) g.global = g;
-  if (!g.navigator) g.navigator = { appName: "Netscape", userAgent: USER_AGENT };
-  if (typeof CryptoJS === "undefined") {
-    const resp = await Widget.http.get(LIB_CRYPTO_JS, { headers: { "User-Agent": USER_AGENT } });
-    (0, eval)(typeof resp.data === "string" ? resp.data : String(resp.data || ""));
+
+  function xtime(a) { return ((a << 1) ^ (a & 128 ? 0x1b : 0)) & 255; }
+  function gmul(a, b) {
+    let r = 0;
+    while (b) {
+      if (b & 1) r ^= a;
+      a = xtime(a);
+      b >>= 1;
+    }
+    return r;
   }
-  if (typeof JSEncrypt === "undefined") {
-    const resp = await Widget.http.get(LIB_JSENCRYPT, { headers: { "User-Agent": USER_AGENT } });
-    (0, eval)(typeof resp.data === "string" ? resp.data : String(resp.data || ""));
+
+  function expandKey(key) {
+    const nk = key.length >> 2;
+    const nr = nk + 6;
+    const w = key.slice();
+    let rcon = 1;
+    for (let i = nk; i < 4 * (nr + 1); i++) {
+      let t = w.slice((i - 1) * 4, i * 4);
+      if (i % nk === 0) {
+        t = [SBOX[t[1]] ^ rcon, SBOX[t[2]], SBOX[t[3]], SBOX[t[0]]];
+        rcon = xtime(rcon);
+      } else if (nk > 6 && i % nk === 4) {
+        t = t.map(v => SBOX[v]);
+      }
+      for (let j = 0; j < 4; j++) w.push(w[(i - nk) * 4 + j] ^ t[j]);
+    }
+    return { w, nr };
   }
-  if (typeof CryptoJS === "undefined") throw new Error("CryptoJS 加载失败");
-  if (typeof JSEncrypt === "undefined") throw new Error("JSEncrypt 加载失败");
-  __libsReady = true;
-}
+
+  function encryptBlock(s, ks) {
+    const { w, nr } = ks;
+    for (let i = 0; i < 16; i++) s[i] ^= w[i];
+    for (let r = 1; r <= nr; r++) {
+      for (let i = 0; i < 16; i++) s[i] = SBOX[s[i]];
+      let t = s[1]; s[1] = s[5]; s[5] = s[9]; s[9] = s[13]; s[13] = t;
+      t = s[2]; s[2] = s[10]; s[10] = t; t = s[6]; s[6] = s[14]; s[14] = t;
+      t = s[15]; s[15] = s[11]; s[11] = s[7]; s[7] = s[3]; s[3] = t;
+      if (r < nr) {
+        for (let c = 0; c < 16; c += 4) {
+          const a0 = s[c], a1 = s[c + 1], a2 = s[c + 2], a3 = s[c + 3];
+          const x = a0 ^ a1 ^ a2 ^ a3;
+          s[c] ^= x ^ xtime(a0 ^ a1);
+          s[c + 1] ^= x ^ xtime(a1 ^ a2);
+          s[c + 2] ^= x ^ xtime(a2 ^ a3);
+          s[c + 3] ^= x ^ xtime(a3 ^ a0);
+        }
+      }
+      for (let i = 0; i < 16; i++) s[i] ^= w[r * 16 + i];
+    }
+    return s;
+  }
+
+  function decryptBlock(s, ks) {
+    const { w, nr } = ks;
+    for (let i = 0; i < 16; i++) s[i] ^= w[nr * 16 + i];
+    for (let r = nr - 1; r >= 0; r--) {
+      let t = s[13]; s[13] = s[9]; s[9] = s[5]; s[5] = s[1]; s[1] = t;
+      t = s[2]; s[2] = s[10]; s[10] = t; t = s[6]; s[6] = s[14]; s[14] = t;
+      t = s[3]; s[3] = s[7]; s[7] = s[11]; s[11] = s[15]; s[15] = t;
+      for (let i = 0; i < 16; i++) s[i] = INV_SBOX[s[i]];
+      for (let i = 0; i < 16; i++) s[i] ^= w[r * 16 + i];
+      if (r > 0) {
+        for (let c = 0; c < 16; c += 4) {
+          const a0 = s[c], a1 = s[c + 1], a2 = s[c + 2], a3 = s[c + 3];
+          s[c] = gmul(a0, 14) ^ gmul(a1, 11) ^ gmul(a2, 13) ^ gmul(a3, 9);
+          s[c + 1] = gmul(a0, 9) ^ gmul(a1, 14) ^ gmul(a2, 11) ^ gmul(a3, 13);
+          s[c + 2] = gmul(a0, 13) ^ gmul(a1, 9) ^ gmul(a2, 14) ^ gmul(a3, 11);
+          s[c + 3] = gmul(a0, 11) ^ gmul(a1, 13) ^ gmul(a2, 9) ^ gmul(a3, 14);
+        }
+      }
+    }
+    return s;
+  }
+
+  function aesCbcEncrypt(data, key, iv) {
+    const ks = expandKey(key);
+    const pad = 16 - (data.length % 16);
+    const src = data.concat(new Array(pad).fill(pad));
+    const out = [];
+    let prev = iv.slice();
+    for (let i = 0; i < src.length; i += 16) {
+      const block = src.slice(i, i + 16).map((v, j) => v ^ prev[j]);
+      prev = encryptBlock(block, ks);
+      for (let j = 0; j < 16; j++) out.push(prev[j]);
+    }
+    return out;
+  }
+
+  function aesCbcDecrypt(data, key, iv) {
+    if (!data.length || data.length % 16) throw new Error("AES 密文长度错误");
+    const ks = expandKey(key);
+    const out = [];
+    let prev = iv.slice();
+    for (let i = 0; i < data.length; i += 16) {
+      const block = data.slice(i, i + 16);
+      const plain = decryptBlock(block.slice(), ks);
+      for (let j = 0; j < 16; j++) out.push(plain[j] ^ prev[j]);
+      prev = block;
+    }
+    const pad = out[out.length - 1];
+    if (pad < 1 || pad > 16) throw new Error("AES 填充错误");
+    return out.slice(0, out.length - pad);
+  }
+
+  function md5(bytes) {
+    const K = [];
+    for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) | 0;
+    const S = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+    const msg = bytes.slice();
+    const bitLen = bytes.length * 8;
+    msg.push(0x80);
+    while (msg.length % 64 !== 56) msg.push(0);
+    for (let i = 0; i < 8; i++) msg.push(i < 4 ? (bitLen >>> (8 * i)) & 255 : Math.floor(bitLen / 4294967296) >>> (8 * (i - 4)) & 255);
+    let a0 = 0x67452301, b0 = 0xefcdab89 | 0, c0 = 0x98badcfe | 0, d0 = 0x10325476;
+    for (let off = 0; off < msg.length; off += 64) {
+      const M = [];
+      for (let i = 0; i < 16; i++) M[i] = msg[off + i * 4] | (msg[off + i * 4 + 1] << 8) | (msg[off + i * 4 + 2] << 16) | (msg[off + i * 4 + 3] << 24);
+      let A = a0, B = b0, C = c0, D = d0;
+      for (let i = 0; i < 64; i++) {
+        let F, g;
+        if (i < 16) { F = (B & C) | (~B & D); g = i; }
+        else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+        else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+        else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+        const sh = S[(i >> 4) * 4 + (i & 3)];
+        const x = (A + F + K[i] + M[g]) | 0;
+        A = D; D = C; C = B;
+        B = (B + ((x << sh) | (x >>> (32 - sh)))) | 0;
+      }
+      a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+    }
+    const out = [];
+    [a0, b0, c0, d0].forEach(v => { for (let i = 0; i < 4; i++) out.push((v >>> (8 * i)) & 255); });
+    return bytesToHex(out);
+  }
+
+  let ZERO, ONE;
+  function initBig() {
+    if (ONE) return;
+    if (typeof BigInt !== "function") throw new Error("当前运行环境不支持 BigInt");
+    ZERO = BigInt(0);
+    ONE = BigInt(1);
+  }
+
+  function bytesToBig(bytes) {
+    initBig();
+    const h = bytesToHex(bytes);
+    return h ? BigInt("0x" + h) : ZERO;
+  }
+
+  function bigToBytes(n, len) {
+    let h = n.toString(16);
+    if (h.length % 2) h = "0" + h;
+    const b = hexToBytes(h);
+    while (b.length < len) b.unshift(0);
+    return b;
+  }
+
+  function modPow(base, exp, mod) {
+    let r = ONE;
+    let b = base % mod;
+    let e = exp;
+    while (e > ZERO) {
+      if (e & ONE) r = (r * b) % mod;
+      e >>= ONE;
+      b = (b * b) % mod;
+    }
+    return r;
+  }
+
+  function derIntegers(bytes) {
+    const ints = [];
+    (function walk(start, end) {
+      let p = start;
+      while (p < end) {
+        const tag = bytes[p++];
+        let len = bytes[p++];
+        if (len & 128) {
+          const n = len & 127;
+          len = 0;
+          for (let i = 0; i < n; i++) len = len * 256 + bytes[p++];
+        }
+        if (tag === 0x02) ints.push(bytesToBig(bytes.slice(p, p + len)));
+        else if (tag === 0x30) walk(p, p + len);
+        else if (tag === 0x03) walk(p + 1, p + len);
+        else if (tag === 0x04) { try { walk(p, p + len); } catch (e) {} }
+        p += len;
+      }
+    })(0, bytes.length);
+    return ints;
+  }
+
+  const keyCache = {};
+  function parseKey(pem) {
+    if (keyCache[pem]) return keyCache[pem];
+    const der = base64ToBytes(String(pem).replace(/-----[^-]+-----/g, ""));
+    const ints = derIntegers(der);
+    let i = 0;
+    while (i < ints.length && ints[i] < BigInt(1) << BigInt(256)) i++;
+    const n = ints[i];
+    if (!n) throw new Error("RSA 密钥解析失败");
+    const key = { n, e: ints[i + 1], d: ints[i + 2], p: ints[i + 3], q: ints[i + 4], dp: ints[i + 5], dq: ints[i + 6], qi: ints[i + 7] };
+    key.size = bigToBytes(n, 0).length;
+    keyCache[pem] = key;
+    return key;
+  }
+
+  function rsaEncrypt(text, pem) {
+    const key = parseKey(pem);
+    const k = key.size;
+    const msg = utf8Encode(text);
+    if (msg.length > k - 11) throw new Error("RSA 明文过长");
+    const em = [0, 2];
+    for (let i = 0; i < k - 3 - msg.length; i++) em.push(1 + Math.floor(Math.random() * 255));
+    em.push(0);
+    const c = modPow(bytesToBig(em.concat(msg)), key.e, key.n);
+    return bytesToBase64(bigToBytes(c, k));
+  }
+
+  function rsaPrivate(c, key) {
+    if (key.p && key.q && key.dp && key.dq && key.qi) {
+      const m1 = modPow(c % key.p, key.dp, key.p);
+      const m2 = modPow(c % key.q, key.dq, key.q);
+      let h = ((m1 - m2) * key.qi) % key.p;
+      if (h < ZERO) h += key.p;
+      return m2 + h * key.q;
+    }
+    return modPow(c, key.d, key.n);
+  }
+
+  function rsaDecrypt(b64, pem) {
+    try {
+      const key = parseKey(pem);
+      const k = key.size;
+      const raw = base64ToBytes(b64);
+      let out = [];
+      for (let off = 0; off < raw.length; off += k) {
+        const em = bigToBytes(rsaPrivate(bytesToBig(raw.slice(off, off + k)), key), k);
+        if (em[0] !== 0 || em[1] !== 2) return null;
+        const sep = em.indexOf(0, 2);
+        if (sep < 10) return null;
+        out = out.concat(em.slice(sep + 1));
+      }
+      return utf8Decode(out);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  return {
+    aesEncryptHex: (text, key, iv) => bytesToHex(aesCbcEncrypt(utf8Encode(text), utf8Encode(key), utf8Encode(iv))),
+    aesDecryptHex: (hex, key, iv) => utf8Decode(aesCbcDecrypt(hexToBytes(hex), utf8Encode(key), utf8Encode(iv))),
+    md5: text => md5(utf8Encode(text)),
+    rsaEncrypt,
+    rsaDecrypt,
+    base64Decode: text => utf8Decode(base64ToBytes(text))
+  };
+})();
 
 function buildHeaders(extra = {}) {
   return Object.assign({
@@ -113,28 +456,19 @@ function buildHeaders(extra = {}) {
 }
 
 function aesEncryptHex(text, keyStr, ivStr) {
-  const key = CryptoJS.enc.Utf8.parse(keyStr);
-  const iv = CryptoJS.enc.Utf8.parse(ivStr);
-  const data = CryptoJS.enc.Utf8.parse(text);
-  return CryptoJS.AES.encrypt(data, key, { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString();
+  return GxCrypto.aesEncryptHex(text, keyStr, ivStr);
 }
 
 function aesDecryptHex(cipherHex, keyStr, ivStr) {
-  const key = CryptoJS.enc.Utf8.parse(keyStr);
-  const iv = CryptoJS.enc.Utf8.parse(ivStr);
-  return CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(cipherHex) }, key, { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).toString(CryptoJS.enc.Utf8);
+  return GxCrypto.aesDecryptHex(cipherHex, keyStr, ivStr);
 }
 
 function rsaEncryptBase64(text, publicKey) {
-  const js = new JSEncrypt();
-  js.setPublicKey(publicKey);
-  return js.encrypt(text);
+  return GxCrypto.rsaEncrypt(text, publicKey);
 }
 
 function rsaDecryptBase64(text, privateKey) {
-  const js = new JSEncrypt();
-  js.setPrivateKey(privateKey);
-  return js.decrypt(text);
+  return GxCrypto.rsaDecrypt(text, privateKey);
 }
 
 function buildRequestBody(params = {}) {
@@ -142,12 +476,14 @@ function buildRequestBody(params = {}) {
   const requestKey = aesEncryptHex(JSON.stringify(params), APP_CONFIG.requestAes.key, APP_CONFIG.requestAes.iv);
   const keys = rsaEncryptBase64(JSON.stringify(APP_CONFIG.requestAes), APP_CONFIG.requestPublicKey);
   const signBase = "token_id=" + APP_CONFIG.tokenId + ",token=" + APP_CONFIG.token + ",phone_type=" + APP_CONFIG.platform + ",request_key=" + requestKey + ",app_id=" + APP_CONFIG.productnumber + ",time=" + String(ts) + ",keys=" + keys;
-  const signature = CryptoJS.MD5(signBase + "*" + APP_CONFIG.iosRequestSalt).toString().toUpperCase();
+  const signature = GxCrypto.md5(signBase + "*" + APP_CONFIG.iosRequestSalt).toUpperCase();
   return { token: APP_CONFIG.token, token_id: APP_CONFIG.tokenId, time: ts, app_id: APP_CONFIG.productnumber, phone_type: APP_CONFIG.platform, keys, request_key: requestKey, signature, ad_version: 1 };
 }
 
 function decryptResponse(responseData) {
-  const aesInfo = JSON.parse(rsaDecryptBase64(responseData.keys, APP_CONFIG.responsePrivateKey));
+  const keyText = rsaDecryptBase64(responseData.keys, APP_CONFIG.responsePrivateKey);
+  if (!keyText) throw new Error("瓜子响应密钥解密失败");
+  const aesInfo = JSON.parse(keyText);
   return JSON.parse(aesDecryptHex(responseData.response_key, aesInfo.key, aesInfo.iv));
 }
 
@@ -319,7 +655,6 @@ async function rawPrivatePost(path, params = {}, baseURL = "") {
 async function authenticate(force = false) {
   if (__authPromise) return __authPromise;
   __authPromise = (async () => {
-    await ensureLibs();
     await initializeDomains(false);
     if (!force && !APP_CONFIG.token) loadStoredAuth();
     if (!APP_CONFIG.deviceId) APP_CONFIG.deviceId = createDeviceId();
@@ -368,7 +703,6 @@ function shouldRotateDomain(error, root) {
 }
 
 async function privatePost(path, params = {}) {
-  await ensureLibs();
   await initializeDomains(false);
   if (!APP_CONFIG.token) loadStoredAuth();
   if (!APP_CONFIG.token) await authenticate(false);
@@ -895,7 +1229,7 @@ function decodePlaylistBody(value) {
   if (!text || text.indexOf("#EXTM3U") >= 0) return text;
   if (!/^[A-Za-z0-9+/=\r\n]+$/.test(text)) return text;
   try {
-    if (typeof CryptoJS !== "undefined") return CryptoJS.enc.Base64.parse(text).toString(CryptoJS.enc.Utf8);
+    return GxCrypto.base64Decode(text);
   } catch (e) {}
   return text;
 }
